@@ -129,6 +129,7 @@ export type FunFact = { title: string; value: string; detail: string };
 export type WeekPoint = { week: number; avg: number; high: number; highWho: string };
 export type TopScore = { who: string; pts: number; season: number; week: number };
 export type PointsLeader = { name: string; pts: number; seasons: number };
+export type MatchupRow = { homeTeam: string; awayTeam: string; homeManagers: string[]; awayManagers: string[]; homePts: number; awayPts: number };
 
 export const getLeagueHome = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -254,7 +255,25 @@ export const getLeagueHome = createServerFn({ method: "POST" })
       .sort((a, b) => b.pts - a.pts)
       .slice(0, 5);
 
-    return { error, season: cur.seasonId ?? null, week: lastWeek, standings, power, facts, trend, topScores, pointsLeaders };
+    // This week's matchups; featured = highest combined score.
+    const matchups: MatchupRow[] = [];
+    for (const g of games) {
+      if (g.home?.teamId == null || g.away?.teamId == null) continue;
+      const ht = teams.find((t) => t.id === g.home!.teamId);
+      const at = teams.find((t) => t.id === g.away!.teamId);
+      if (!ht || !at) continue;
+      for (const wk of L.matchWeeks(g)) {
+        if (wk.period !== lastWeek) continue;
+        matchups.push({
+          homeTeam: label(ht).team, awayTeam: label(at).team,
+          homeManagers: L.teamManagers(cur, ht), awayManagers: L.teamManagers(cur, at),
+          homePts: r2(wk.homePts), awayPts: r2(wk.awayPts),
+        });
+      }
+    }
+    const featured = matchups.reduce<MatchupRow | null>((b, m) => (b === null || m.homePts + m.awayPts > b.homePts + b.awayPts ? m : b), null);
+
+    return { error, season: cur.seasonId ?? null, week: lastWeek, standings, power, facts, trend, topScores, pointsLeaders, matchups, featured };
   });
 
 // ---------- Rivalries ----------
