@@ -15,9 +15,25 @@ export type RawMatch = {
   matchupPeriodId?: number;
   playoffTierType?: string;
   winner?: string;
-  home?: { teamId?: number; totalPoints?: number };
-  away?: { teamId?: number; totalPoints?: number };
+  home?: { teamId?: number; totalPoints?: number; cumulativeScore?: { scoreByScoringPeriod?: Record<string, number> } };
+  away?: { teamId?: number; totalPoints?: number; cumulativeScore?: { scoreByScoringPeriod?: Record<string, number> } };
 };
+
+/**
+ * Split a matchup into single-week scores. Two-week playoff matchups arrive as
+ * one cumulative total; scoreByScoringPeriod gives each week separately.
+ * Falls back to the matchup total when the breakdown is missing.
+ */
+export function matchWeeks(m: RawMatch): Array<{ period: number; homePts: number; awayPts: number }> {
+  const hp = m.home?.cumulativeScore?.scoreByScoringPeriod;
+  const ap = m.away?.cumulativeScore?.scoreByScoringPeriod;
+  const periods = [...new Set([...Object.keys(hp ?? {}), ...Object.keys(ap ?? {})])]
+    .map(Number)
+    .filter((n) => Number.isFinite(n))
+    .sort((a, b) => a - b);
+  if (periods.length <= 1) return [{ period: m.matchupPeriodId ?? 0, homePts: m.home?.totalPoints ?? 0, awayPts: m.away?.totalPoints ?? 0 }];
+  return periods.map((p) => ({ period: p, homePts: hp?.[String(p)] ?? 0, awayPts: ap?.[String(p)] ?? 0 }));
+}
 export type RawSeason = {
   seasonId?: number;
   status?: { previousSeasons?: number[]; currentMatchupPeriod?: number; latestScoringPeriod?: number };

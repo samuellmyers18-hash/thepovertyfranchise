@@ -139,16 +139,16 @@ export const getLeagueHome = createServerFn({ method: "POST" })
     const teams = cur.teams ?? [];
     const label = (t: RawTeam) => ({ team: L.teamName(t), managers: L.teamManagers(cur, t).join(" & ") });
     const games = (cur.schedule ?? []).filter((m) => done(m) && regular(m));
-    const weeks = [...new Set(games.map((g) => g.matchupPeriodId ?? 0))].sort((a, b) => a - b);
-    const lastWeek = weeks[weeks.length - 1] ?? 0;
-
     const scores = new Map<number, Map<number, number>>(); // week -> team -> pts
     for (const g of games) {
-      const w = g.matchupPeriodId ?? 0;
-      if (!scores.has(w)) scores.set(w, new Map());
-      if (g.home?.teamId != null) scores.get(w)!.set(g.home.teamId, g.home.totalPoints ?? 0);
-      if (g.away?.teamId != null) scores.get(w)!.set(g.away.teamId, g.away.totalPoints ?? 0);
+      for (const wk of L.matchWeeks(g)) {
+        if (!scores.has(wk.period)) scores.set(wk.period, new Map());
+        if (g.home?.teamId != null) scores.get(wk.period)!.set(g.home.teamId, wk.homePts);
+        if (g.away?.teamId != null) scores.get(wk.period)!.set(g.away.teamId, wk.awayPts);
+      }
     }
+    const weeks = [...scores.keys()].sort((a, b) => a - b);
+    const lastWeek = weeks[weeks.length - 1] ?? 0;
 
     const standings: StandingRow[] = teams
       .map((t) => {
@@ -199,10 +199,12 @@ export const getLeagueHome = createServerFn({ method: "POST" })
       const byId = new Map((s.teams ?? []).map((t) => [t.id, `${L.teamManagers(s, t).join(" & ") || L.teamName(t)}`]));
       for (const m of s.schedule ?? []) {
         if (!done(m) || m.home?.teamId == null || m.away?.teamId == null) continue;
-        const h = { who: byId.get(m.home.teamId) ?? "?", pts: m.home.totalPoints ?? 0 };
-        const a = { who: byId.get(m.away.teamId) ?? "?", pts: m.away.totalPoints ?? 0 };
-        const [hi, lo] = h.pts >= a.pts ? [h, a] : [a, h];
-        all.push({ season: s.seasonId ?? 0, week: m.matchupPeriodId ?? 0, w: hi.who, l: lo.who, ws: hi.pts, ls: lo.pts, hi, lo });
+        for (const wk of L.matchWeeks(m)) {
+          const h = { who: byId.get(m.home.teamId) ?? "?", pts: wk.homePts };
+          const a = { who: byId.get(m.away.teamId) ?? "?", pts: wk.awayPts };
+          const [hi, lo] = h.pts >= a.pts ? [h, a] : [a, h];
+          all.push({ season: s.seasonId ?? 0, week: wk.period, w: hi.who, l: lo.who, ws: hi.pts, ls: lo.pts, hi, lo });
+        }
       }
     }
     const facts: FunFact[] = [];
@@ -232,7 +234,7 @@ export const getLeagueHome = createServerFn({ method: "POST" })
 
 // ---------- Rivalries ----------
 
-export type Rivalry = { a: string; b: string; games: number; aWins: number; bWins: number; ties: number; aPts: number; bPts: number; avgMargin: number; last: string; playoffGames: number };
+export type Rivalry = { a: string; b: string; games: number; aWins: number; bWins: number; ties: number; aPts: number; bPts: number; avgMargin: number; last: string; playoffGames: number; aBest: number; bBest: number; biggestWin: number; closest: number | null; seasonCount: number };
 
 export const getRivalries = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -250,22 +252,31 @@ export const getRivalries = createServerFn({ method: "POST" })
           if (h === a) continue;
           const [x, y] = (h < a ? [h, a] : [a, h]) as [string, string];
           const flip = x !== h;
-          const xp = flip ? m.away.totalPoints ?? 0 : m.home.totalPoints ?? 0;
-          const yp = flip ? m.home.totalPoints ?? 0 : m.away.totalPoints ?? 0;
-          const k = `${x}|${y}`;
-          const r = map.get(k) ?? { a: x, b: y, games: 0, aWins: 0, bWins: 0, ties: 0, aPts: 0, bPts: 0, avgMargin: 0, last: "", playoffGames: 0 };
-          r.games++;
-          if (xp > yp) r.aWins++; else if (yp > xp) r.bWins++; else r.ties++;
-          r.aPts += xp;
-          r.bPts += yp;
-          if (!regular(m)) r.playoffGames++;
-          r.last = `${s.seasonId} wk ${m.matchupPeriodId}: ${xp > yp ? x : y} ${Math.max(xp, yp).toFixed(1)}–${Math.min(xp, yp).toFixed(1)}`;
-          map.set(k, r);
+          for (const wk of L.matchWeeks(m)) {
+            const xp = flip ? wk.awayPts : wk.homePts;
+            const yp = flip ? wk.homePts : wk.awayPts;
+            const k = `${x}|${y}`;
+            const r = map.get(k) ?? { a: x, b: y, games: 0, aWins: 0, bWins: 0, ties: 0, aPts: 0, bPts: 0, avgMargin: 0, last: "", playoffGames: 0, aBest: 0, bBest: 0, biggestWin: 0, closest: Infinity, seasons: new Set<number>() };
+            r.games++;
+            if (xp > yp) r.aWins++; else if (yp > xp) r.bWins++; else r.ties++;
+            r.aPts += xp;
+            r.bPts += yp;
+            r.aBest = Math.max(r.aBest, xp);
+            r.bBest = Math.max(r.bBest, yp);
+            if (xp !== yp) {
+              r.biggestWin = Math.max(r.biggestWin, Math.abs(xp - yp));
+              r.closest = Math.min(r.closest, Math.abs(xp - yp));
+            }
+            r.seasons.add(s.seasonId ?? 0);
+            if (!regular(m)) r.playoffGames++;
+            r.last = `${s.seasonId} wk ${wk.period}: ${xp > yp ? x : y} ${Math.max(xp, yp).toFixed(1)}–${Math.min(xp, yp).toFixed(1)}`;
+            map.set(k, r);
+          }
         }
       }
     }
     const rivalries = [...map.values()]
-      .map((r) => ({ ...r, aPts: r2(r.aPts), bPts: r2(r.bPts), avgMargin: r2(Math.abs(r.aPts - r.bPts) / r.games) }))
+      .map((r) => ({ ...r, aPts: r2(r.aPts), bPts: r2(r.bPts), avgMargin: r2(Math.abs(r.aPts - r.bPts) / r.games), closest: r.closest === Infinity ? null : r2(r.closest), seasonCount: r.seasons.size, seasons: undefined }))
       .sort((p, q) => q.games - p.games || p.avgMargin - q.avgMargin);
     return { error, rivalries };
   });
@@ -325,12 +336,14 @@ export const getManagerProfile = createServerFn({ method: "POST" })
         const hm = byId.get(m.home.teamId) ?? [], am = byId.get(m.away.teamId) ?? [];
         const isHome = hm.some((n) => mKey(n) === data.key), isAway = am.some((n) => mKey(n) === data.key);
         if (!isHome && !isAway) continue;
-        games.push({
-          season: s.seasonId ?? 0, week: m.matchupPeriodId ?? 0, playoff: !regular(m),
-          me: (isHome ? m.home.totalPoints : m.away.totalPoints) ?? 0,
-          opp: (isHome ? m.away.totalPoints : m.home.totalPoints) ?? 0,
-          opps: isHome ? am : hm,
-        });
+        for (const wk of L.matchWeeks(m)) {
+          games.push({
+            season: s.seasonId ?? 0, week: wk.period, playoff: !regular(m),
+            me: isHome ? wk.homePts : wk.awayPts,
+            opp: isHome ? wk.awayPts : wk.homePts,
+            opps: isHome ? am : hm,
+          });
+        }
       }
     }
     const facts: FunFact[] = [];
