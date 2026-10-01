@@ -126,13 +126,16 @@ export const releaseManager = createServerFn({ method: "POST" })
 export type StandingRow = { teamId: number; team: string; managers: string; wins: number; losses: number; ties: number; pf: number; pa: number; streak: string };
 export type PowerRow = StandingRow & { rank: number; score: number; allPlay: string; recentAvg: number; note: string };
 export type FunFact = { title: string; value: string; detail: string };
+export type WeekPoint = { week: number; avg: number; high: number; highWho: string };
+export type TopScore = { who: string; pts: number; season: number; week: number };
+export type PointsLeader = { name: string; pts: number; seasons: number };
 
 export const getLeagueHome = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
     const L = await lib();
     const { seasons, error } = await L.loadAllSeasons();
-    if (!seasons.length) return { error: error ?? "No data yet.", season: null, week: 0, standings: [], power: [], facts: [] };
+    if (!seasons.length) return { error: error ?? "No data yet.", season: null, week: 0, standings: [], power: [], facts: [], trend: [], topScores: [], pointsLeaders: [] };
 
     // Use the newest season with completed games.
     const cur: RawSeason = seasons.find((s) => (s.schedule ?? []).some(done)) ?? seasons[0]!;
@@ -229,7 +232,29 @@ export const getLeagueHome = createServerFn({ method: "POST" })
     if (wkLow) facts.push({ title: `Week ${lastWeek} basement`, value: wkLow.ls.toFixed(2), detail: wkLow.l });
     facts.push({ title: "Games on record", value: String(all.length), detail: `${seasons.length} seasons` });
 
-    return { error, season: cur.seasonId ?? null, week: lastWeek, standings, power, facts };
+    // Weekly scoring trend for the current season (league average + weekly high).
+    const trend: WeekPoint[] = weeks.map((w) => {
+      const wk = scores.get(w)!;
+      const vals = [...wk.values()];
+      const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+      let high = 0, highWho = "";
+      for (const [tid, p] of wk) if (p > high) { high = p; highWho = teams.find((t) => t.id === tid) ? label(teams.find((t) => t.id === tid)!).managers : ""; }
+      return { week: w, avg: r2(avg), high: r2(high), highWho };
+    });
+
+    // Top 5 single-week scores of all time.
+    const topScores: TopScore[] = [...all]
+      .sort((a, b) => b.ws - a.ws)
+      .slice(0, 5)
+      .map((g) => ({ who: g.w, pts: r2(g.ws), season: g.season, week: g.week }));
+
+    // Career points-for leaders.
+    const pointsLeaders: PointsLeader[] = mgrs
+      .map((m) => ({ name: m.name, pts: r2(m.pointsFor), seasons: m.seasons.length }))
+      .sort((a, b) => b.pts - a.pts)
+      .slice(0, 5);
+
+    return { error, season: cur.seasonId ?? null, week: lastWeek, standings, power, facts, trend, topScores, pointsLeaders };
   });
 
 // ---------- Rivalries ----------
