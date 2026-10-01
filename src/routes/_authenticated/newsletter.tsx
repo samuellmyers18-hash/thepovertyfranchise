@@ -216,7 +216,8 @@ function NewsletterPage() {
                         <span className="text-muted-foreground">vs</span>
                         <div className="text-right"><Who x={p.away} /><p className="text-xs text-muted-foreground">{p.away.rec} · {p.away.avg.toFixed(1)}/wk</p></div>
                       </div>
-                      <p className="mt-2 text-xs text-muted-foreground">All-time: {p.h2h.aw}–{p.h2h.bw} · <span className="text-primary">Post pick: {p.pick}</span></p>
+                      <p className="mt-2 text-xs text-muted-foreground">All-time: {p.h2h.aw}–{p.h2h.bw}</p>
+                      <PredictionBox p={p.prediction} home={p.home.managers} away={p.away.managers} />
                     </div>
                   ))}
                 </div>

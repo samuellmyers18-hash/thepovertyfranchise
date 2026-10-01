@@ -23,6 +23,24 @@ export function ManagerNames({ names, className }: { names: string; className?: 
   );
 }
 
+export function PredictionBox({ p, home, away }: { p: { pick: "home" | "away"; confidence: number; reasons: string[]; upset: boolean }; home: string; away: string }) {
+  return (
+    <div className="mt-3 rounded border border-primary/30 bg-primary/5 p-3">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+        Our pick{p.upset ? " · upset alert" : ""}
+      </p>
+      <p className="mt-1 flex items-center justify-between gap-2 text-sm font-semibold text-foreground">
+        <ManagerNames names={p.pick === "home" ? home : away} />
+        <span className="text-primary">{p.confidence}% sure</span>
+      </p>
+      <div className="mt-1 h-1.5 overflow-hidden rounded bg-muted"><div className="h-full bg-primary" style={{ width: `${p.confidence}%` }} /></div>
+      <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+        {p.reasons.map((r, i) => <li key={i}>• {r}</li>)}
+      </ul>
+    </div>
+  );
+}
+
 export function MatchupCard({ m, big }: { m: MatchupRow; big?: boolean }) {
   const played = m.homePts + m.awayPts > 0;
   const homeWon = m.homePts > m.awayPts;
@@ -52,6 +70,7 @@ export function MatchupCard({ m, big }: { m: MatchupRow; big?: boolean }) {
           {m.awayProj != null && <p className="text-[10px] uppercase tracking-wide text-muted-foreground">proj {m.awayProj.toFixed(1)}</p>}
         </div>
       </div>
+      {m.prediction && <PredictionBox p={m.prediction} home={m.homeManagers.join(" & ")} away={m.awayManagers.join(" & ")} />}
     </div>
   );
 }
