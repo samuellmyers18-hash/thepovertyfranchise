@@ -460,6 +460,44 @@ function slotOrderFromLabel(slot: string) {
   return 0;
 }
 
+// ---------- Matchups by week ----------
+
+export const getMatchups = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { season?: number | undefined; week?: number | undefined }) => ({
+    season: Number.isInteger(input?.season) ? input.season : undefined,
+    week: Number.isInteger(input?.week) ? input.week : undefined,
+  }))
+  .handler(async ({ data }) => {
+    const L = await lib();
+    const { seasons, error } = await L.loadAllSeasons();
+    const years = seasons.map((s) => s.seasonId ?? 0);
+    const s = seasons.find((x) => x.seasonId === data.season) ?? seasons[0];
+    if (!s) return { error: error ?? "No data yet.", years, season: null, week: 0, weeks: [] as number[], matchups: [] as MatchupRow[] };
+    const periodCount = s.settings?.scheduleSettings?.matchupPeriodCount ?? 17;
+    const latest = Math.min(s.status?.latestScoringPeriod ?? periodCount, periodCount) || 1;
+    const week = data.week && data.week >= 1 && data.week <= periodCount ? data.week : latest;
+    const teams = s.teams ?? [];
+    const matchups: MatchupRow[] = [];
+    for (const g of s.schedule ?? []) {
+      if (g.home?.teamId == null || g.away?.teamId == null) continue;
+      const ht = teams.find((t) => t.id === g.home!.teamId);
+      const at = teams.find((t) => t.id === g.away!.teamId);
+      if (!ht || !at) continue;
+      for (const wk of L.matchWeeks(g)) {
+        if (wk.period !== week) continue;
+        matchups.push({
+          homeTeam: L.teamName(ht), awayTeam: L.teamName(at),
+          homeManagers: L.teamManagers(s, ht), awayManagers: L.teamManagers(s, at),
+          homePts: r2(wk.homePts), awayPts: r2(wk.awayPts),
+          homeProj: g.home!.totalProjectedPointsLive != null ? r2(g.home!.totalProjectedPointsLive) : null,
+          awayProj: g.away!.totalProjectedPointsLive != null ? r2(g.away!.totalProjectedPointsLive) : null,
+        });
+      }
+    }
+    return { error, years, season: s.seasonId ?? null, week, weeks: Array.from({ length: periodCount }, (_, i) => i + 1), matchups };
+  });
+
 // ---------- Single manager profile ----------
 
 export const getManagerProfile = createServerFn({ method: "POST" })
