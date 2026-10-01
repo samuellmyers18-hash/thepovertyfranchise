@@ -13,3 +13,4 @@
 - [x] Rivalries page
 - [x] Draft recaps page
 - [x] Separate Claim page; Managers list links to public manager profiles with fun facts
+- [ ] Home page: creative fun facts (charts/visuals), more sections
