@@ -39,6 +39,7 @@ function ConnectPage() {
 
   const [swid, setSwid] = useState("");
   const [espnS2, setEspnS2] = useState("");
+  const [leagueId, setLeagueId] = useState("");
 
   const status = useQuery({
     queryKey: ["espn-status"],
@@ -46,10 +47,10 @@ function ConnectPage() {
   });
 
   const save = useMutation({
-    mutationFn: () => saveConnection({ data: { swid, espnS2 } }),
+    mutationFn: () => saveConnection({ data: { swid, espnS2, leagueId } }),
     onSuccess: (result) => {
       if (!result.ok) {
-        toast.error(result.error ?? "Couldn't connect to ESPN.");
+        toast.error(result.error ?? "Couldn't connect to ESPN.", { duration: 10000 });
         return;
       }
       toast.success("ESPN connected.");
@@ -103,7 +104,10 @@ function ConnectPage() {
           </CardHeader>
           <CardContent>
             <ol className="list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
-              <li>Log in at fantasy.espn.com in Chrome and open your league.</li>
+              <li>
+                Log in at fantasy.espn.com in Chrome and open your league. Copy the number after{" "}
+                <span className="text-foreground">leagueId=</span> in the address bar (or paste the whole link).
+              </li>
               <li>Press F12 (or right-click → Inspect) to open developer tools.</li>
               <li>Open the “Application” tab, then Cookies → https://fantasy.espn.com.</li>
               <li>
@@ -164,6 +168,16 @@ function ConnectPage() {
                 save.mutate();
               }}
             >
+              <div className="space-y-2">
+                <Label htmlFor="league_id">League ID</Label>
+                <Input
+                  id="league_id"
+                  value={leagueId}
+                  onChange={(e) => setLeagueId(e.target.value)}
+                  placeholder="The number after leagueId= in your league's web address"
+                  required
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="swid">SWID</Label>
                 <Input
