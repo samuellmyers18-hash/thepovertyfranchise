@@ -614,7 +614,7 @@ export const getPlayerRankings = createServerFn({ method: "POST" })
       return [{
         id: p.id, name: p.fullName, pos, injury: p.injuryStatus && p.injuryStatus !== "ACTIVE" ? p.injuryStatus : null,
         seasonAvg: r2(seasonAct?.appliedAverage ?? 0), seasonPts: r2(seasonPts), weekProj: r2(wk?.appliedTotal ?? 0), rosProj: r2(rosProj),
-        espnRank: p.draftRanksByRankType?.PPR?.rank ?? null,
+        espnRank: p.draftRanksByRankType?.["PPR"]?.rank ?? null,
         owned: r2(p.ownership?.percentOwned ?? 0), trend: r2(p.ownership?.percentChange ?? 0),
         team: t ? L.teamName(t) : null,
         managers: t ? L.teamManagers(s, t).join(" & ") : "",
@@ -640,7 +640,7 @@ export const getPlayerRankings = createServerFn({ method: "POST" })
     const players: RankedPlayer[] = scored.map((r, i) => {
       posCount[r.pos] = (posCount[r.pos] ?? 0) + 1;
       const tier = r.score >= 75 ? "Elite" : r.score >= 60 ? "Starter" : r.score >= 45 ? "Flex" : r.score >= 30 ? "Bench" : "Deep";
-      return { ...r, rank: i + 1, posRank: posCount[r.pos], tier };
+      return { ...r, rank: i + 1, posRank: posCount[r.pos] ?? 1, tier };
     });
     return { error: null as string | null, season: year, week, players };
   });
