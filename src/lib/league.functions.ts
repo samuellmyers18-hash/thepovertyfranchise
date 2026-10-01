@@ -139,16 +139,16 @@ export const getLeagueHome = createServerFn({ method: "POST" })
     const teams = cur.teams ?? [];
     const label = (t: RawTeam) => ({ team: L.teamName(t), managers: L.teamManagers(cur, t).join(" & ") });
     const games = (cur.schedule ?? []).filter((m) => done(m) && regular(m));
-    const weeks = [...new Set(games.map((g) => g.matchupPeriodId ?? 0))].sort((a, b) => a - b);
-    const lastWeek = weeks[weeks.length - 1] ?? 0;
-
     const scores = new Map<number, Map<number, number>>(); // week -> team -> pts
     for (const g of games) {
-      const w = g.matchupPeriodId ?? 0;
-      if (!scores.has(w)) scores.set(w, new Map());
-      if (g.home?.teamId != null) scores.get(w)!.set(g.home.teamId, g.home.totalPoints ?? 0);
-      if (g.away?.teamId != null) scores.get(w)!.set(g.away.teamId, g.away.totalPoints ?? 0);
+      for (const wk of L.matchWeeks(g)) {
+        if (!scores.has(wk.period)) scores.set(wk.period, new Map());
+        if (g.home?.teamId != null) scores.get(wk.period)!.set(g.home.teamId, wk.homePts);
+        if (g.away?.teamId != null) scores.get(wk.period)!.set(g.away.teamId, wk.awayPts);
+      }
     }
+    const weeks = [...scores.keys()].sort((a, b) => a - b);
+    const lastWeek = weeks[weeks.length - 1] ?? 0;
 
     const standings: StandingRow[] = teams
       .map((t) => {
@@ -201,8 +201,12 @@ export const getLeagueHome = createServerFn({ method: "POST" })
         if (!done(m) || m.home?.teamId == null || m.away?.teamId == null) continue;
         const h = { who: byId.get(m.home.teamId) ?? "?", pts: m.home.totalPoints ?? 0 };
         const a = { who: byId.get(m.away.teamId) ?? "?", pts: m.away.totalPoints ?? 0 };
-        const [hi, lo] = h.pts >= a.pts ? [h, a] : [a, h];
-        all.push({ season: s.seasonId ?? 0, week: m.matchupPeriodId ?? 0, w: hi.who, l: lo.who, ws: hi.pts, ls: lo.pts, hi, lo });
+        for (const wk of L.matchWeeks(m)) {
+          const h = { who: byId.get(m.home.teamId) ?? "?", pts: wk.homePts };
+          const a = { who: byId.get(m.away.teamId) ?? "?", pts: wk.awayPts };
+          const [hi, lo] = h.pts >= a.pts ? [h, a] : [a, h];
+          all.push({ season: s.seasonId ?? 0, week: wk.period, w: hi.who, l: lo.who, ws: hi.pts, ls: lo.pts, hi, lo });
+        }
       }
     }
     const facts: FunFact[] = [];
