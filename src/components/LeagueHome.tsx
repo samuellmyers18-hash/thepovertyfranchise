@@ -1,10 +1,53 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { getLeagueHome } from "@/lib/league.functions";
+import { Link } from "@tanstack/react-router";
+import { getLeagueHome, type MatchupRow } from "@/lib/league.functions";
 import { Card, CardContent } from "@/components/ui/card";
-import { Crown, TrendingUp, Flame, Trophy, BarChart3 } from "lucide-react";
+import { Crown, TrendingUp, Flame, Trophy, BarChart3, Star, CalendarDays } from "lucide-react";
 
 const th = "px-3 py-2 text-left";
+const mKey = (n: string) => n.trim().toLowerCase().replace(/\s+/g, " ");
+
+/** Render "A & B" manager strings as profile links. */
+export function ManagerNames({ names, className }: { names: string; className?: string }) {
+  const parts = names.split(" & ").map((s) => s.trim()).filter(Boolean);
+  return (
+    <span className={className}>
+      {parts.map((n, i) => (
+        <span key={n}>
+          {i > 0 && " & "}
+          <Link to="/managers/$key" params={{ key: mKey(n) }} className="hover:text-primary hover:underline">{n}</Link>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function MatchupCard({ m, big }: { m: MatchupRow; big?: boolean }) {
+  const homeWon = m.homePts > m.awayPts;
+  const tied = m.homePts === m.awayPts;
+  return (
+    <div className={`rounded-md border bg-card ${big ? "border-primary/50 p-6" : "border-border p-4"}`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className={`truncate font-semibold ${homeWon && !tied ? "text-primary" : "text-foreground"} ${big ? "text-xl" : ""}`}>{m.homeTeam}</p>
+          <ManagerNames names={m.homeManagers.join(" & ")} className="text-xs text-muted-foreground" />
+        </div>
+        <p className={`${big ? "text-4xl" : "text-2xl"} font-black ${homeWon && !tied ? "text-primary" : "text-foreground"}`}>{m.homePts.toFixed(1)}</p>
+      </div>
+      <div className="my-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+        <span className="h-px flex-1 bg-border" />vs<span className="h-px flex-1 bg-border" />
+      </div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className={`truncate font-semibold ${!homeWon && !tied ? "text-primary" : "text-foreground"} ${big ? "text-xl" : ""}`}>{m.awayTeam}</p>
+          <ManagerNames names={m.awayManagers.join(" & ")} className="text-xs text-muted-foreground" />
+        </div>
+        <p className={`${big ? "text-4xl" : "text-2xl"} font-black ${!homeWon && !tied ? "text-primary" : "text-foreground"}`}>{m.awayPts.toFixed(1)}</p>
+      </div>
+    </div>
+  );
+}
 
 function TrendChart({ trend }: { trend: { week: number; avg: number; high: number; highWho: string }[] }) {
   const max = Math.max(1, ...trend.map((t) => t.high));
