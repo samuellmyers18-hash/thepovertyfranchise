@@ -37,7 +37,7 @@ function DraftsPage() {
       {data?.error && !data.picks.length && <p className="mt-8 text-destructive">{data.error}</p>}
       {data && data.picks.length > 0 && (
         <p className="mt-6 text-muted-foreground">
-          {data.season} draft · {data.picks.length} picks · first overall: <span className="text-primary">{data.picks[0].player}</span> to {data.picks[0].managers || data.picks[0].team}
+          {data.season} draft · {data.picks.length} picks · first overall: <span className="text-primary">{data.picks[0]!.player}</span> to {data.picks[0]!.managers || data.picks[0]!.team}
         </p>
       )}
       <div className="mt-6 space-y-6">

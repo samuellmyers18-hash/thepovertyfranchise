@@ -276,7 +276,7 @@ export type DraftPick = { overall: number; round: number; pick: number; team: st
 
 export const getDraft = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { season?: number }) => ({ season: Number.isInteger(input?.season) ? input.season : undefined }))
+  .inputValidator((input: { season?: number | undefined }) => ({ season: Number.isInteger(input?.season) ? input.season : undefined }))
   .handler(async ({ data }) => {
     const L = await lib();
     const { seasons, error } = await L.loadAllSeasons();

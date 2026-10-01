@@ -18,6 +18,7 @@ import { Route as AuthenticatedDraftsRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedRivalriesRouteImport } from './routes/_authenticated/rivalries'
 import { Route as AuthenticatedManagersIndexRouteImport } from './routes/_authenticated/managers.index'
+import { Route as AuthenticatedManagersKeyRouteImport } from './routes/_authenticated/managers.$key'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -64,6 +65,12 @@ const AuthenticatedManagersIndexRoute =
     path: '/managers/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedManagersKeyRoute =
+  AuthenticatedManagersKeyRouteImport.update({
+    id: '/managers/$key',
+    path: '/managers/$key',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/drafts': typeof AuthenticatedDraftsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/rivalries': typeof AuthenticatedRivalriesRoute
+  '/managers/$key': typeof AuthenticatedManagersKeyRoute
   '/managers/': typeof AuthenticatedManagersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -83,6 +91,7 @@ export interface FileRoutesByTo {
   '/drafts': typeof AuthenticatedDraftsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/rivalries': typeof AuthenticatedRivalriesRoute
+  '/managers/$key': typeof AuthenticatedManagersKeyRoute
   '/managers': typeof AuthenticatedManagersIndexRoute
 }
 export interface FileRoutesById {
@@ -95,6 +104,7 @@ export interface FileRoutesById {
   '/_authenticated/drafts': typeof AuthenticatedDraftsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/rivalries': typeof AuthenticatedRivalriesRoute
+  '/_authenticated/managers/$key': typeof AuthenticatedManagersKeyRoute
   '/_authenticated/managers/': typeof AuthenticatedManagersIndexRoute
 }
 export interface FileRouteTypes {
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/drafts'
     | '/profile'
     | '/rivalries'
+    | '/managers/$key'
     | '/managers/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/drafts'
     | '/profile'
     | '/rivalries'
+    | '/managers/$key'
     | '/managers'
   id:
     | '__root__'
@@ -128,6 +140,7 @@ export interface FileRouteTypes {
     | '/_authenticated/drafts'
     | '/_authenticated/profile'
     | '/_authenticated/rivalries'
+    | '/_authenticated/managers/$key'
     | '/_authenticated/managers/'
   fileRoutesById: FileRoutesById
 }
@@ -202,6 +215,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedManagersIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/managers/$key': {
+      id: '/_authenticated/managers/$key'
+      path: '/managers/$key'
+      fullPath: '/managers/$key'
+      preLoaderRoute: typeof AuthenticatedManagersKeyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -211,6 +231,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDraftsRoute: typeof AuthenticatedDraftsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRivalriesRoute: typeof AuthenticatedRivalriesRoute
+  AuthenticatedManagersKeyRoute: typeof AuthenticatedManagersKeyRoute
   AuthenticatedManagersIndexRoute: typeof AuthenticatedManagersIndexRoute
 }
 
@@ -220,6 +241,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDraftsRoute: AuthenticatedDraftsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRivalriesRoute: AuthenticatedRivalriesRoute,
+  AuthenticatedManagersKeyRoute: AuthenticatedManagersKeyRoute,
   AuthenticatedManagersIndexRoute: AuthenticatedManagersIndexRoute,
 }
 
