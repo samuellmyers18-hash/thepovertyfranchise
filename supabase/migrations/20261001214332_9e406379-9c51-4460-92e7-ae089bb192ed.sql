@@ -1,0 +1,1 @@
+ALTER TABLE public.espn_connections ADD COLUMN league_id text;
