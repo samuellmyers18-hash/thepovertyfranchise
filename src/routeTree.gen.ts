@@ -13,11 +13,14 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAwardsRouteImport } from './routes/_authenticated/awards'
 import { Route as AuthenticatedClaimRouteImport } from './routes/_authenticated/claim'
 import { Route as AuthenticatedDraftsRouteImport } from './routes/_authenticated/drafts'
 import { Route as AuthenticatedMatchupsRouteImport } from './routes/_authenticated/matchups'
+import { Route as AuthenticatedNewsletterRouteImport } from './routes/_authenticated/newsletter'
 import { Route as AuthenticatedPlayersRouteImport } from './routes/_authenticated/players'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedRecordsRouteImport } from './routes/_authenticated/records'
 import { Route as AuthenticatedRivalriesRouteImport } from './routes/_authenticated/rivalries'
 import { Route as AuthenticatedRostersRouteImport } from './routes/_authenticated/rosters'
 import { Route as AuthenticatedManagersIndexRouteImport } from './routes/_authenticated/managers.index'
@@ -42,6 +45,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAwardsRoute = AuthenticatedAwardsRouteImport.update({
+  id: '/awards',
+  path: '/awards',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedClaimRoute = AuthenticatedClaimRouteImport.update({
   id: '/claim',
   path: '/claim',
@@ -57,6 +65,11 @@ const AuthenticatedMatchupsRoute = AuthenticatedMatchupsRouteImport.update({
   path: '/matchups',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedNewsletterRoute = AuthenticatedNewsletterRouteImport.update({
+  id: '/newsletter',
+  path: '/newsletter',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPlayersRoute = AuthenticatedPlayersRouteImport.update({
   id: '/players',
   path: '/players',
@@ -65,6 +78,11 @@ const AuthenticatedPlayersRoute = AuthenticatedPlayersRouteImport.update({
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRecordsRoute = AuthenticatedRecordsRouteImport.update({
+  id: '/records',
+  path: '/records',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedRivalriesRoute = AuthenticatedRivalriesRouteImport.update({
@@ -94,11 +112,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/awards': typeof AuthenticatedAwardsRoute
   '/claim': typeof AuthenticatedClaimRoute
   '/drafts': typeof AuthenticatedDraftsRoute
   '/matchups': typeof AuthenticatedMatchupsRoute
+  '/newsletter': typeof AuthenticatedNewsletterRoute
   '/players': typeof AuthenticatedPlayersRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/records': typeof AuthenticatedRecordsRoute
   '/rivalries': typeof AuthenticatedRivalriesRoute
   '/rosters': typeof AuthenticatedRostersRoute
   '/managers/$key': typeof AuthenticatedManagersKeyRoute
@@ -108,11 +129,14 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/awards': typeof AuthenticatedAwardsRoute
   '/claim': typeof AuthenticatedClaimRoute
   '/drafts': typeof AuthenticatedDraftsRoute
   '/matchups': typeof AuthenticatedMatchupsRoute
+  '/newsletter': typeof AuthenticatedNewsletterRoute
   '/players': typeof AuthenticatedPlayersRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/records': typeof AuthenticatedRecordsRoute
   '/rivalries': typeof AuthenticatedRivalriesRoute
   '/rosters': typeof AuthenticatedRostersRoute
   '/managers/$key': typeof AuthenticatedManagersKeyRoute
@@ -124,11 +148,14 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/awards': typeof AuthenticatedAwardsRoute
   '/_authenticated/claim': typeof AuthenticatedClaimRoute
   '/_authenticated/drafts': typeof AuthenticatedDraftsRoute
   '/_authenticated/matchups': typeof AuthenticatedMatchupsRoute
+  '/_authenticated/newsletter': typeof AuthenticatedNewsletterRoute
   '/_authenticated/players': typeof AuthenticatedPlayersRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/records': typeof AuthenticatedRecordsRoute
   '/_authenticated/rivalries': typeof AuthenticatedRivalriesRoute
   '/_authenticated/rosters': typeof AuthenticatedRostersRoute
   '/_authenticated/managers/$key': typeof AuthenticatedManagersKeyRoute
@@ -140,11 +167,14 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/admin'
+    | '/awards'
     | '/claim'
     | '/drafts'
     | '/matchups'
+    | '/newsletter'
     | '/players'
     | '/profile'
+    | '/records'
     | '/rivalries'
     | '/rosters'
     | '/managers/$key'
@@ -154,11 +184,14 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/admin'
+    | '/awards'
     | '/claim'
     | '/drafts'
     | '/matchups'
+    | '/newsletter'
     | '/players'
     | '/profile'
+    | '/records'
     | '/rivalries'
     | '/rosters'
     | '/managers/$key'
@@ -169,11 +202,14 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/admin'
+    | '/_authenticated/awards'
     | '/_authenticated/claim'
     | '/_authenticated/drafts'
     | '/_authenticated/matchups'
+    | '/_authenticated/newsletter'
     | '/_authenticated/players'
     | '/_authenticated/profile'
+    | '/_authenticated/records'
     | '/_authenticated/rivalries'
     | '/_authenticated/rosters'
     | '/_authenticated/managers/$key'
@@ -216,6 +252,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/awards': {
+      id: '/_authenticated/awards'
+      path: '/awards'
+      fullPath: '/awards'
+      preLoaderRoute: typeof AuthenticatedAwardsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/claim': {
       id: '/_authenticated/claim'
       path: '/claim'
@@ -237,6 +280,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMatchupsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/newsletter': {
+      id: '/_authenticated/newsletter'
+      path: '/newsletter'
+      fullPath: '/newsletter'
+      preLoaderRoute: typeof AuthenticatedNewsletterRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/players': {
       id: '/_authenticated/players'
       path: '/players'
@@ -249,6 +299,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/records': {
+      id: '/_authenticated/records'
+      path: '/records'
+      fullPath: '/records'
+      preLoaderRoute: typeof AuthenticatedRecordsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rivalries': {
@@ -284,11 +341,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAwardsRoute: typeof AuthenticatedAwardsRoute
   AuthenticatedClaimRoute: typeof AuthenticatedClaimRoute
   AuthenticatedDraftsRoute: typeof AuthenticatedDraftsRoute
   AuthenticatedMatchupsRoute: typeof AuthenticatedMatchupsRoute
+  AuthenticatedNewsletterRoute: typeof AuthenticatedNewsletterRoute
   AuthenticatedPlayersRoute: typeof AuthenticatedPlayersRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedRecordsRoute: typeof AuthenticatedRecordsRoute
   AuthenticatedRivalriesRoute: typeof AuthenticatedRivalriesRoute
   AuthenticatedRostersRoute: typeof AuthenticatedRostersRoute
   AuthenticatedManagersKeyRoute: typeof AuthenticatedManagersKeyRoute
@@ -297,11 +357,14 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAwardsRoute: AuthenticatedAwardsRoute,
   AuthenticatedClaimRoute: AuthenticatedClaimRoute,
   AuthenticatedDraftsRoute: AuthenticatedDraftsRoute,
   AuthenticatedMatchupsRoute: AuthenticatedMatchupsRoute,
+  AuthenticatedNewsletterRoute: AuthenticatedNewsletterRoute,
   AuthenticatedPlayersRoute: AuthenticatedPlayersRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedRecordsRoute: AuthenticatedRecordsRoute,
   AuthenticatedRivalriesRoute: AuthenticatedRivalriesRoute,
   AuthenticatedRostersRoute: AuthenticatedRostersRoute,
   AuthenticatedManagersKeyRoute: AuthenticatedManagersKeyRoute,

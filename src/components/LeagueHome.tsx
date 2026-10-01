@@ -123,11 +123,11 @@ export function LeagueHome() {
       <section>
         <h2 className="text-4xl text-foreground">Power rankings</h2>
         <p className="mb-4 text-sm text-muted-foreground">
-          40% all-play record (how you'd do vs. everyone each week), 30% actual record, 30% scoring over the last 3 weeks.
+          25% all-play record, 20% actual record, 20% last-3-week scoring, 15% this week's projection, 20% rest-of-season projection of each team's best lineup.
         </p>
         <div className="overflow-x-auto rounded-md border border-border">
           <table className="w-full text-sm">
-            <thead className="bg-secondary text-muted-foreground"><tr>{["#", "Team", "Score", "Record", "All-play", "Last 3 avg", "Proj", ""].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
+            <thead className="bg-secondary text-muted-foreground"><tr>{["#", "Team", "Score", "Record", "All-play", "Last 3 avg", "Proj", "ROS proj", ""].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
             <tbody>
               {data.power.map((p) => (
                 <tr key={p.teamId} className="border-t border-border">
@@ -145,6 +145,7 @@ export function LeagueHome() {
                   <td className="px-3 py-2">{p.allPlay}</td>
                   <td className="px-3 py-2">{p.recentAvg.toFixed(1)}</td>
                   <td className="px-3 py-2">{p.proj > 0 ? p.proj.toFixed(1) : "—"}</td>
+                  <td className="px-3 py-2">{p.ros > 0 ? p.ros : "—"}</td>
                   <td className="px-3 py-2 text-xs text-primary">{p.note}</td>
                 </tr>
               ))}
