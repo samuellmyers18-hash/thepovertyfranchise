@@ -11,4 +11,4 @@
 - [x] Player rankings model (original request — not built yet)
 - [ ] Player rankings: pull data from Flock Fantasy (blocked: no public data, paid login needed)
 - [x] Power rankings: add rest-of-season roster projections
-- [ ] Records: add waiver/pickup, trade and other non-game records
+- [x] Records: add waiver/pickup, trade and other non-game records
