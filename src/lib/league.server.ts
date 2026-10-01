@@ -15,8 +15,8 @@ export type RawMatch = {
   matchupPeriodId?: number;
   playoffTierType?: string;
   winner?: string;
-  home?: { teamId?: number; totalPoints?: number; cumulativeScore?: { scoreByScoringPeriod?: Record<string, number> } };
-  away?: { teamId?: number; totalPoints?: number; cumulativeScore?: { scoreByScoringPeriod?: Record<string, number> } };
+  home?: { teamId?: number; totalPoints?: number; pointsByScoringPeriod?: Record<string, number>; cumulativeScore?: { scoreByScoringPeriod?: Record<string, number> } };
+  away?: { teamId?: number; totalPoints?: number; pointsByScoringPeriod?: Record<string, number>; cumulativeScore?: { scoreByScoringPeriod?: Record<string, number> } };
 };
 
 /**
@@ -25,8 +25,8 @@ export type RawMatch = {
  * Falls back to the matchup total when the breakdown is missing.
  */
 export function matchWeeks(m: RawMatch): Array<{ period: number; homePts: number; awayPts: number }> {
-  const hp = m.home?.cumulativeScore?.scoreByScoringPeriod;
-  const ap = m.away?.cumulativeScore?.scoreByScoringPeriod;
+  const hp = m.home?.pointsByScoringPeriod ?? m.home?.cumulativeScore?.scoreByScoringPeriod;
+  const ap = m.away?.pointsByScoringPeriod ?? m.away?.cumulativeScore?.scoreByScoringPeriod;
   const periods = [...new Set([...Object.keys(hp ?? {}), ...Object.keys(ap ?? {})])]
     .map(Number)
     .filter((n) => Number.isFinite(n))
