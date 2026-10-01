@@ -23,7 +23,7 @@ export function ManagerNames({ names, className }: { names: string; className?: 
   );
 }
 
-function MatchupCard({ m, big }: { m: MatchupRow; big?: boolean }) {
+export function MatchupCard({ m, big }: { m: MatchupRow; big?: boolean }) {
   const played = m.homePts + m.awayPts > 0;
   const homeWon = m.homePts > m.awayPts;
   const tied = m.homePts === m.awayPts;
