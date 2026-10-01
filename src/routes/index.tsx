@@ -64,7 +64,7 @@ function Index() {
           {signedIn ? (
             <>
               <Button asChild size="lg">
-                <Link to="/managers">Claim your manager</Link>
+                <Link to="/claim">Claim your manager</Link>
               </Button>
               {isAdmin && (
                 <Button asChild size="lg">

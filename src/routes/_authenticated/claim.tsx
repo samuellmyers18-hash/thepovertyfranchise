@@ -4,28 +4,28 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { claimManager, getManagers, releaseManager } from "@/lib/league.functions";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
-export const Route = createFileRoute("/_authenticated/managers")({
+export const Route = createFileRoute("/_authenticated/claim")({
   head: () => ({
     meta: [
-      { title: "Managers — The Poverty Franchise" },
-      { name: "description", content: "Every manager in Poverty Franchise history. Claim yours." },
-      { property: "og:title", content: "Managers — The Poverty Franchise" },
-      { property: "og:description", content: "Every manager in Poverty Franchise history." },
+      { title: "Claim your manager — The Poverty Franchise" },
+      { name: "description", content: "Link your account to your manager in The Poverty Franchise." },
+      { property: "og:title", content: "Claim your manager — The Poverty Franchise" },
+      { property: "og:description", content: "Link your account to your manager." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: ManagersPage,
+  component: ClaimPage,
 });
 
-function ManagersPage() {
+function ClaimPage() {
   const fetchManagers = useServerFn(getManagers);
   const claim = useServerFn(claimManager);
   const release = useServerFn(releaseManager);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["managers"], queryFn: () => fetchManagers() });
+  const mine = data?.managers.find((m) => m.key === data.myClaim);
 
   async function onClaim(key: string, name: string) {
     const r = await claim({ data: { key, name } });
@@ -39,42 +39,35 @@ function ManagersPage() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-10">
-      <h1 className="text-5xl text-foreground">Managers</h1>
-      <p className="mt-2 text-muted-foreground">Everyone who has ever managed in the league, past and present. Claim the one that's you.</p>
-      {isLoading && <p className="mt-8 text-muted-foreground">Loading every season from ESPN…</p>}
+    <main className="mx-auto max-w-3xl px-6 py-10">
+      <h1 className="text-5xl text-foreground">Claim your manager</h1>
+      {isLoading && <p className="mt-8 text-muted-foreground">Loading managers…</p>}
       {data?.error && <p className="mt-8 text-destructive">{data.error}</p>}
-      <div className="mt-8 overflow-x-auto rounded-md border border-border">
-        <table className="w-full text-sm">
-          <thead className="bg-secondary text-left text-muted-foreground">
-            <tr>{["Manager", "Seasons", "Record", "Titles", "Points for", ""].map((h) => <th key={h} className="px-3 py-2">{h}</th>)}</tr>
-          </thead>
-          <tbody>
-            {data?.managers.map((m) => {
-              const mine = m.claimedBy === data.userId;
-              return (
-                <tr key={m.key} className="border-t border-border">
-                  <td className="px-3 py-2 font-semibold text-foreground">{m.name}{mine && <Badge className="ml-2">You</Badge>}</td>
-                  <td className="px-3 py-2">{m.seasons.map((s) => s.season).sort().join(", ")}</td>
-                  <td className="px-3 py-2">{m.wins}-{m.losses}{m.ties ? `-${m.ties}` : ""}</td>
-                  <td className="px-3 py-2">{m.championships}</td>
-                  <td className="px-3 py-2">{m.pointsFor.toFixed(1)}</td>
-                  <td className="px-3 py-2 text-right">
-                    {mine ? (
-                      <Button size="sm" variant="secondary" onClick={() => onRelease(m.key)}>Unclaim</Button>
-                    ) : m.claimedBy ? (
-                      <span className="text-xs text-muted-foreground">Claimed</span>
-                    ) : !data.myClaim ? (
-                      <Button size="sm" onClick={() => onClaim(m.key, m.name)}>This is me</Button>
-                    ) : null}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      {data?.myClaim && <Link to="/profile" className="mt-6 inline-block text-primary underline">Go to my profile →</Link>}
+      {mine ? (
+        <div className="mt-6 rounded-md border border-border bg-card p-6">
+          <p className="text-muted-foreground">You're linked to</p>
+          <p className="text-4xl text-primary">{mine.name}</p>
+          <div className="mt-4 flex gap-3">
+            <Button asChild><Link to="/managers/$key" params={{ key: mine.key }}>View my profile</Link></Button>
+            <Button variant="secondary" onClick={() => onRelease(mine.key)}>That's not me</Button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <p className="mt-2 text-muted-foreground">Find your name and tap "This is me". Each manager can only be claimed once.</p>
+          <div className="mt-6 divide-y divide-border rounded-md border border-border">
+            {data?.managers.map((m) => (
+              <div key={m.key} className="flex items-center justify-between px-4 py-3">
+                <div>
+                  <p className="font-semibold text-foreground">{m.name}</p>
+                  <p className="text-xs text-muted-foreground">{m.seasons.map((s) => s.season).sort().join(", ")}</p>
+                </div>
+                {m.claimedBy ? <span className="text-xs text-muted-foreground">Claimed</span> : <Button size="sm" onClick={() => onClaim(m.key, m.name)}>This is me</Button>}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </main>
   );
 }
