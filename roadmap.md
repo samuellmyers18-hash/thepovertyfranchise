@@ -8,4 +8,4 @@
 - [x] Matchups page (past weeks) + home shows current week w/ projections
 - [x] Power rankings blend roster projections
 - [x] Admin: team-name editor (current teams) + manager-name editor (incl. past managers)
-- [ ] Player rankings model (original request — not built yet)
+- [x] Player rankings model (original request — not built yet)
