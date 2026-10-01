@@ -424,8 +424,10 @@ const SLOT_LABELS: Record<number, string> = {
   16: "D/ST", 17: "K", 18: "P", 19: "HC", 20: "Bench", 21: "IR", 23: "FLEX", 24: "EDR", 25: "RB",
 };
 const slotLabel = (id?: number) => SLOT_LABELS[id ?? -1] ?? `Slot ${id ?? "?"}`;
+// Real lineup order: QB, RB, RB, WR, WR, WR/TE, TE, FLEX, D/ST, K, Bench, IR.
+const SLOT_ORDER: Record<number, number> = { 0: 1, 2: 2, 25: 2, 4: 3, 5: 4, 6: 5, 23: 6, 16: 7, 17: 8, 20: 9, 21: 10 };
 
-export type RosterPlayer = { name: string; slot: string; acquired: string | null };
+export type RosterPlayer = { name: string; slot: string; slotId: number | undefined; acquired: string | null };
 export type RosterTeam = { teamId: number; team: string; managers: string[]; players: RosterPlayer[] };
 
 export const getRosters = createServerFn({ method: "POST" })
@@ -455,9 +457,10 @@ export const getRosters = createServerFn({ method: "POST" })
           .map((e) => ({
             name: names[e.playerId ?? 0] ?? `Player #${e.playerId}`,
             slot: slotLabel(e.lineupSlotId),
+            slotId: e.lineupSlotId,
             acquired: e.acquisitionDate ? new Date(e.acquisitionDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : null,
           }))
-          .sort((a, b) => slotOrderFromLabel(a.slot) - slotOrderFromLabel(b.slot));
+          .sort((a, b) => (SLOT_ORDER[a.slotId ?? -1] ?? 20) - (SLOT_ORDER[b.slotId ?? -1] ?? 20));
         return { teamId: rt.id ?? 0, team: t ? L.teamName(t) : `Team ${rt.id}`, managers: t ? L.teamManagers(s, t) : [], players };
       })
       .sort((a, b) => a.team.localeCompare(b.team));

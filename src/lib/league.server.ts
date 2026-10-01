@@ -139,7 +139,25 @@ export async function loadAllSeasons(): Promise<{ seasons: RawSeason[]; error?: 
   const past = await Promise.all(years.map((y) => fetchSeason(conn.league_id!, y, cookie)));
   const seasons = [latest, ...past.filter((s): s is RawSeason => Boolean(s?.teams))];
   seasons.sort((a, b) => (b.seasonId ?? 0) - (a.seasonId ?? 0));
+  await applyManagerNames(seasons);
   return { seasons };
+}
+
+/** Rename managers per the admin's overrides (applies to current and past seasons). */
+async function applyManagerNames(seasons: RawSeason[]) {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin.from("manager_names").select("manager_key, display_name");
+    if (!data?.length) return;
+    const overrides = new Map(data.map((r) => [r.manager_key, r.display_name]));
+    for (const s of seasons) {
+      for (const m of s.members ?? []) {
+        const raw = ([m.firstName, m.lastName].filter(Boolean).join(" ") || m.displayName || "").trim();
+        const nice = overrides.get(managerKey(raw));
+        if (nice) { m.firstName = nice; m.lastName = ""; }
+      }
+    }
+  } catch { /* overrides are optional */ }
 }
 
 export async function loadPlayerNames(year: number, ids: number[]): Promise<Record<number, string>> {

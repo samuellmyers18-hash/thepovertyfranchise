@@ -4,7 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { connectEspn, disconnectEspn, getEspnStatus, getIsAdmin, getLeagueTeams, saveTeamName } from "@/lib/espn.functions";
+import { connectEspn, disconnectEspn, getEspnStatus, getIsAdmin, getLeagueTeams, saveManagerName, saveTeamName } from "@/lib/espn.functions";
+import { getManagers } from "@/lib/league.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -206,8 +207,70 @@ function AdminTools() {
         </Card>
 
         {status.data?.connected && <TeamNamesCard />}
+        {status.data?.connected && <ManagerNamesCard />}
       </div>
     </main>
+  );
+}
+
+function ManagerNamesCard() {
+  const fetchManagers = useServerFn(getManagers);
+  const save = useServerFn(saveManagerName);
+  const queryClient = useQueryClient();
+  const managers = useQuery({ queryKey: ["managers"], queryFn: () => fetchManagers({ data: undefined }) });
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+
+  async function handleSave(key: string, value: string) {
+    setSavingKey(key);
+    try {
+      const res = await save({ data: { managerKey: key, name: value } });
+      if (!res.ok) toast.error(res.error ?? "Couldn't save.");
+      else {
+        toast.success(value.trim() ? "Manager name saved." : "Reset to ESPN name.");
+        setDrafts((d) => ({ ...d, [key]: "" }));
+        await queryClient.invalidateQueries();
+      }
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  return (
+    <Card className="mt-6">
+      <CardHeader>
+        <CardTitle className="text-2xl">Manager names</CardTitle>
+        <CardDescription>
+          Rename any manager, including past ones. The new name shows everywhere — profiles, rivalries, history.
+          Leave it blank to use the ESPN name.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {managers.isLoading && <p className="text-sm text-muted-foreground">Loading managers…</p>}
+        {managers.data?.error && <p className="text-sm text-destructive">{managers.data.error}</p>}
+        {managers.data?.managers.map((m) => {
+          const value = drafts[m.key] ?? "";
+          return (
+            <div key={m.key} className="rounded-md border border-border bg-secondary/40 p-4">
+              <p className="text-sm text-muted-foreground">
+                Current: <span className="text-foreground">{m.name}</span> · {m.seasons.length} season{m.seasons.length === 1 ? "" : "s"}
+              </p>
+              <div className="mt-2 flex gap-2">
+                <Input
+                  aria-label={`Display name for ${m.name}`}
+                  value={value}
+                  placeholder={m.name}
+                  onChange={(e) => setDrafts((d) => ({ ...d, [m.key]: e.target.value }))}
+                />
+                <Button type="button" onClick={() => handleSave(m.key, value)} disabled={savingKey === m.key}>
+                  {savingKey === m.key ? "Saving…" : "Save"}
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
   );
 }
 

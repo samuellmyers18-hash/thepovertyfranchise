@@ -68,6 +68,24 @@ export type Database = {
         }
         Relationships: []
       }
+      manager_names: {
+        Row: {
+          display_name: string
+          manager_key: string
+          updated_at: string
+        }
+        Insert: {
+          display_name: string
+          manager_key: string
+          updated_at?: string
+        }
+        Update: {
+          display_name?: string
+          manager_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
