@@ -408,7 +408,6 @@ const SLOT_LABELS: Record<number, string> = {
   16: "D/ST", 17: "K", 18: "P", 19: "HC", 20: "Bench", 21: "IR", 23: "FLEX", 24: "EDR", 25: "RB",
 };
 const slotLabel = (id?: number) => SLOT_LABELS[id ?? -1] ?? `Slot ${id ?? "?"}`;
-const slotOrder = (id?: number) => (id === 20 ? 50 : id === 21 ? 60 : (id ?? 99));
 
 export type RosterPlayer = { name: string; slot: string; acquired: string | null };
 export type RosterTeam = { teamId: number; team: string; managers: string[]; players: RosterPlayer[] };
