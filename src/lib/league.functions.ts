@@ -234,7 +234,7 @@ export const getLeagueHome = createServerFn({ method: "POST" })
 
 // ---------- Rivalries ----------
 
-export type Rivalry = { a: string; b: string; games: number; aWins: number; bWins: number; ties: number; aPts: number; bPts: number; avgMargin: number; last: string; playoffGames: number };
+export type Rivalry = { a: string; b: string; games: number; aWins: number; bWins: number; ties: number; aPts: number; bPts: number; avgMargin: number; last: string; playoffGames: number; aBest: number; bBest: number; biggestWin: number; closest: number | null; seasonCount: number };
 
 export const getRivalries = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -276,7 +276,7 @@ export const getRivalries = createServerFn({ method: "POST" })
       }
     }
     const rivalries = [...map.values()]
-      .map((r) => ({ ...r, aPts: r2(r.aPts), bPts: r2(r.bPts), avgMargin: r2(Math.abs(r.aPts - r.bPts) / r.games) }))
+      .map((r) => ({ ...r, aPts: r2(r.aPts), bPts: r2(r.bPts), avgMargin: r2(Math.abs(r.aPts - r.bPts) / r.games), closest: r.closest === Infinity ? null : r2(r.closest), seasonCount: r.seasons.size, seasons: undefined }))
       .sort((p, q) => q.games - p.games || p.avgMargin - q.avgMargin);
     return { error, rivalries };
   });
@@ -336,12 +336,14 @@ export const getManagerProfile = createServerFn({ method: "POST" })
         const hm = byId.get(m.home.teamId) ?? [], am = byId.get(m.away.teamId) ?? [];
         const isHome = hm.some((n) => mKey(n) === data.key), isAway = am.some((n) => mKey(n) === data.key);
         if (!isHome && !isAway) continue;
-        games.push({
-          season: s.seasonId ?? 0, week: m.matchupPeriodId ?? 0, playoff: !regular(m),
-          me: (isHome ? m.home.totalPoints : m.away.totalPoints) ?? 0,
-          opp: (isHome ? m.away.totalPoints : m.home.totalPoints) ?? 0,
-          opps: isHome ? am : hm,
-        });
+        for (const wk of L.matchWeeks(m)) {
+          games.push({
+            season: s.seasonId ?? 0, week: wk.period, playoff: !regular(m),
+            me: isHome ? wk.homePts : wk.awayPts,
+            opp: isHome ? wk.awayPts : wk.homePts,
+            opps: isHome ? am : hm,
+          });
+        }
       }
     }
     const facts: FunFact[] = [];
