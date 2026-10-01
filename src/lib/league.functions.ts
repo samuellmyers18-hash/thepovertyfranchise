@@ -136,7 +136,7 @@ export const getLeagueHome = createServerFn({ method: "POST" })
   .handler(async () => {
     const L = await lib();
     const { seasons, error } = await L.loadAllSeasons();
-    if (!seasons.length) return { error: error ?? "No data yet.", season: null, week: 0, standings: [], power: [], facts: [], trend: [], topScores: [], pointsLeaders: [] };
+    if (!seasons.length) return { error: error ?? "No data yet.", season: null, week: 0, standings: [], power: [], facts: [], trend: [], topScores: [], pointsLeaders: [], matchups: [], featured: null };
 
     // Use the newest season with completed games.
     const cur: RawSeason = seasons.find((s) => (s.schedule ?? []).some(done)) ?? seasons[0]!;
