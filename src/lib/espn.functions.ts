@@ -35,7 +35,7 @@ function normalizeS2(raw: string): string {
 
 function normalizeLeagueId(raw: string): string {
   const m = raw.match(/leagueId=(\d+)/i) ?? raw.match(/(\d{3,})/);
-  return m ? m[1] : raw.trim();
+  return m?.[1] ?? raw.trim();
 }
 
 type LeagueJson = {
