@@ -42,6 +42,16 @@ export type RawSeason = {
   teams?: RawTeam[];
   schedule?: RawMatch[];
   draftDetail?: { picks?: Array<{ overallPickNumber?: number; roundId?: number; roundPickNumber?: number; teamId?: number; playerId?: number; keeper?: boolean }> };
+  transactions?: Array<{
+    id?: number;
+    type?: string; // WAIVER | FREEAGENT | TRADE | etc.
+    status?: string; // EXECUTED etc.
+    proposedDate?: number;
+    executionDate?: number;
+    teamId?: number;
+    bidAmount?: number;
+    items?: Array<{ type?: string; playerId?: number; fromTeamId?: number; toTeamId?: number }>;
+  }>;
 };
 
 export function managerKey(name: string) {
@@ -75,7 +85,7 @@ async function getConn() {
   return data;
 }
 
-const VIEWS = "view=mTeam&view=mSettings&view=mMatchupScore&view=mDraftDetail";
+const VIEWS = "view=mTeam&view=mSettings&view=mMatchupScore&view=mMatchup&view=mDraftDetail&view=mTransactions2";
 
 async function fetchSeason(leagueId: string, year: number, cookie: string): Promise<RawSeason | null> {
   const headers = { accept: "application/json", cookie, "user-agent": "Mozilla/5.0" };

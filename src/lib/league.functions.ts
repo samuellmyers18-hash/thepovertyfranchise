@@ -126,13 +126,18 @@ export const releaseManager = createServerFn({ method: "POST" })
 export type StandingRow = { teamId: number; team: string; managers: string; wins: number; losses: number; ties: number; pf: number; pa: number; streak: string };
 export type PowerRow = StandingRow & { rank: number; score: number; allPlay: string; recentAvg: number; note: string };
 export type FunFact = { title: string; value: string; detail: string };
+export type WeekPoint = { week: number; avg: number; high: number; highWho: string };
+export type TopScore = { who: string; pts: number; season: number; week: number };
+export type PointsLeader = { name: string; pts: number; seasons: number };
+export type MatchupRow = { homeTeam: string; awayTeam: string; homeManagers: string[]; awayManagers: string[]; homePts: number; awayPts: number };
+export type MoveRow = { kind: "Waiver" | "Free agent" | "Trade"; date: string; team: string; managers: string[]; players: string; bid: number | null };
 
 export const getLeagueHome = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
     const L = await lib();
     const { seasons, error } = await L.loadAllSeasons();
-    if (!seasons.length) return { error: error ?? "No data yet.", season: null, week: 0, standings: [], power: [], facts: [] };
+    if (!seasons.length) return { error: error ?? "No data yet.", season: null, week: 0, standings: [], power: [], facts: [], trend: [], topScores: [], pointsLeaders: [], matchups: [], featured: null, moves: [] };
 
     // Use the newest season with completed games.
     const cur: RawSeason = seasons.find((s) => (s.schedule ?? []).some(done)) ?? seasons[0]!;
@@ -229,7 +234,86 @@ export const getLeagueHome = createServerFn({ method: "POST" })
     if (wkLow) facts.push({ title: `Week ${lastWeek} basement`, value: wkLow.ls.toFixed(2), detail: wkLow.l });
     facts.push({ title: "Games on record", value: String(all.length), detail: `${seasons.length} seasons` });
 
-    return { error, season: cur.seasonId ?? null, week: lastWeek, standings, power, facts };
+    // Weekly scoring trend for the current season (league average + weekly high).
+    const trend: WeekPoint[] = weeks.map((w) => {
+      const wk = scores.get(w)!;
+      const vals = [...wk.values()];
+      const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+      let high = 0, highWho = "";
+      for (const [tid, p] of wk) if (p > high) { high = p; highWho = teams.find((t) => t.id === tid) ? label(teams.find((t) => t.id === tid)!).managers : ""; }
+      return { week: w, avg: r2(avg), high: r2(high), highWho };
+    });
+
+    // Top 5 single-week scores of all time.
+    const topScores: TopScore[] = [...all]
+      .sort((a, b) => b.ws - a.ws)
+      .slice(0, 5)
+      .map((g) => ({ who: g.w, pts: r2(g.ws), season: g.season, week: g.week }));
+
+    // Career points-for leaders.
+    const pointsLeaders: PointsLeader[] = mgrs
+      .map((m) => ({ name: m.name, pts: r2(m.pointsFor), seasons: m.seasons.length }))
+      .sort((a, b) => b.pts - a.pts)
+      .slice(0, 5);
+
+    // This week's matchups; featured = highest combined score.
+    const matchups: MatchupRow[] = [];
+    for (const g of games) {
+      if (g.home?.teamId == null || g.away?.teamId == null) continue;
+      const ht = teams.find((t) => t.id === g.home!.teamId);
+      const at = teams.find((t) => t.id === g.away!.teamId);
+      if (!ht || !at) continue;
+      for (const wk of L.matchWeeks(g)) {
+        if (wk.period !== lastWeek) continue;
+        matchups.push({
+          homeTeam: label(ht).team, awayTeam: label(at).team,
+          homeManagers: L.teamManagers(cur, ht), awayManagers: L.teamManagers(cur, at),
+          homePts: r2(wk.homePts), awayPts: r2(wk.awayPts),
+        });
+      }
+    }
+    const featured = matchups.reduce<MatchupRow | null>((b, m) => (b === null || m.homePts + m.awayPts > b.homePts + b.awayPts ? m : b), null);
+
+    // Recent roster moves (waivers, free agents, trades) from the current season.
+    const txns = (cur.transactions ?? [])
+      .filter((t) => (t.status ?? "EXECUTED") === "EXECUTED" && ["WAIVER", "FREEAGENT", "TRADE"].includes(t.type ?? ""))
+      .sort((a, b) => (b.proposedDate ?? 0) - (a.proposedDate ?? 0))
+      .slice(0, 12);
+    const pids = [...new Set(txns.flatMap((t) => (t.items ?? []).map((i) => i.playerId ?? 0)).filter(Boolean))];
+    const playerNames = await L.loadPlayerNames(cur.seasonId ?? 0, pids);
+    const pname = (id?: number) => playerNames[id ?? 0] ?? "Unknown";
+    const teamLabel = (id?: number) => {
+      const t = teams.find((x) => x.id === id);
+      return t ? { team: label(t).team, managers: L.teamManagers(cur, t) } : { team: "?", managers: [] as string[] };
+    };
+    const moves: MoveRow[] = txns.map((t) => {
+        const date = new Date(t.proposedDate ?? 0).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        if (t.type === "TRADE") {
+          const adds = (t.items ?? []).filter((i) => i.type === "ADD");
+          const byTo = new Map<number, string[]>();
+          for (const i of adds) {
+            const to = i.toTeamId ?? 0;
+            byTo.set(to, [...(byTo.get(to) ?? []), pname(i.playerId)]);
+          }
+          return {
+            kind: "Trade" as const, date,
+            team: [...byTo.keys()].map((id) => teamLabel(id).team).join(" ↔ "),
+            managers: [...new Set([...byTo.keys()].flatMap((id) => teamLabel(id).managers))],
+            players: [...byTo.entries()].map(([id, ps]) => `${teamLabel(id).team} gets ${ps.join(", ")}`).join(" · "),
+            bid: null,
+          };
+        }
+        const add = (t.items ?? []).find((i) => i.type === "ADD");
+        const drop = (t.items ?? []).find((i) => i.type === "DROP");
+        const who = teamLabel(t.teamId ?? add?.toTeamId);
+        const parts = [
+          add ? `+ ${pname(add.playerId)}` : null,
+          drop ? `− ${pname(drop.playerId)}` : null,
+        ].filter(Boolean).join(" / ");
+        return { kind: t.type === "WAIVER" ? ("Waiver" as const) : ("Free agent" as const), date, team: who.team, managers: who.managers, players: parts, bid: t.type === "WAIVER" ? (t.bidAmount ?? null) : null };
+      });
+
+    return { error, season: cur.seasonId ?? null, week: lastWeek, standings, power, facts, trend, topScores, pointsLeaders, matchups, featured, moves };
   });
 
 // ---------- Rivalries ----------
@@ -241,7 +325,8 @@ export const getRivalries = createServerFn({ method: "POST" })
   .handler(async () => {
     const L = await lib();
     const { seasons, error } = await L.loadAllSeasons();
-    const map = new Map<string, Rivalry>();
+    type RivalryAcc = Omit<Rivalry, "closest" | "seasonCount"> & { closest: number; seasons: Set<number> };
+    const map = new Map<string, RivalryAcc>();
     for (const s of [...seasons].sort((x, y) => (x.seasonId ?? 0) - (y.seasonId ?? 0))) {
       const byId = new Map((s.teams ?? []).map((t) => [t.id, L.teamManagers(s, t)]));
       for (const m of s.schedule ?? []) {
@@ -275,8 +360,8 @@ export const getRivalries = createServerFn({ method: "POST" })
         }
       }
     }
-    const rivalries = [...map.values()]
-      .map((r) => ({ ...r, aPts: r2(r.aPts), bPts: r2(r.bPts), avgMargin: r2(Math.abs(r.aPts - r.bPts) / r.games), closest: r.closest === Infinity ? null : r2(r.closest), seasonCount: r.seasons.size, seasons: undefined }))
+    const rivalries: Rivalry[] = [...map.values()]
+      .map(({ seasons, closest, ...r }) => ({ ...r, aPts: r2(r.aPts), bPts: r2(r.bPts), avgMargin: r2(Math.abs(r.aPts - r.bPts) / r.games), closest: closest === Infinity ? null : r2(closest), seasonCount: seasons.size }))
       .sort((p, q) => q.games - p.games || p.avgMargin - q.avgMargin);
     return { error, rivalries };
   });

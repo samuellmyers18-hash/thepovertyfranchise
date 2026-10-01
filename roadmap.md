@@ -14,3 +14,7 @@
 - [x] Draft recaps page
 - [x] Separate Claim page; Managers list links to public manager profiles with fun facts
 - [ ] Home page: creative fun facts (charts/visuals), more sections
+- [ ] Weekly matchups section + featured matchup on home
+- [ ] Manager names clickable everywhere -> profile
+- [ ] Home: recent moves (pickups, waivers, trades)
+- [ ] Rosters: roster page + past rosters by week on manager profiles
