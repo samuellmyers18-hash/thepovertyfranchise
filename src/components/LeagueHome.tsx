@@ -46,7 +46,7 @@ export function MatchupCard({ m, big }: { m: MatchupRow; big?: boolean }) {
   const homeWon = m.homePts > m.awayPts;
   const tied = m.homePts === m.awayPts;
   return (
-    <div className={`rounded-md border bg-card ${big ? "border-primary/50 p-6" : "border-border p-4"}`}>
+    <div className={`card-lift animate-fade-up rounded-md border bg-card ${big ? "animate-glow border-primary/50 p-6" : "border-border p-4"}`}>
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className={`truncate font-semibold ${played && homeWon && !tied ? "text-primary" : "text-foreground"} ${big ? "text-xl" : ""}`}>{m.homeTeam}</p>
@@ -108,8 +108,8 @@ export function LeagueHome() {
   const maxTop = Math.max(1, ...data.topScores.map((t) => t.pts));
 
   return (
-    <div className="mt-12 space-y-12">
-      <p className="text-sm uppercase tracking-[0.3em] text-primary">
+    <div className="hero-backdrop -mx-4 mt-6 space-y-12 px-4 pb-8 pt-6">
+      <p className="animate-fade-up text-sm uppercase tracking-[0.3em] text-primary">
         {data.season} season · through week {data.week}
       </p>
 
@@ -131,10 +131,10 @@ export function LeagueHome() {
       )}
 
       {heroFact && (
-        <section className="relative overflow-hidden rounded-lg border border-primary/40 bg-gradient-to-br from-primary/15 via-card to-card p-8">
+        <section className="animate-glow animate-fade-up relative overflow-hidden rounded-lg border border-primary/40 bg-gradient-to-br from-primary/15 via-card to-card p-8">
           <Flame className="absolute -right-6 -top-6 h-40 w-40 text-primary/10" />
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary">League record</p>
-          <p className="mt-2 text-7xl font-black text-foreground sm:text-8xl">{heroFact.value}</p>
+          <p className="gold-text mt-2 text-7xl font-black sm:text-8xl">{heroFact.value}</p>
           <p className="mt-2 text-lg text-muted-foreground">{heroFact.detail}</p>
         </section>
       )}
@@ -155,7 +155,7 @@ export function LeagueHome() {
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-16 overflow-hidden rounded-full bg-muted">
-                        <div className="h-full bg-primary" style={{ width: `${(p.score / (data.power[0]?.score || 1)) * 100}%` }} />
+                        <div className="bar-animated h-full bg-primary" style={{ width: `${(p.score / (data.power[0]?.score || 1)) * 100}%` }} />
                       </div>
                       {p.score}
                     </div>
@@ -217,7 +217,7 @@ export function LeagueHome() {
                     <span className="text-sm font-bold text-foreground">{t.pts.toFixed(1)}</span>
                   </div>
                   <div className="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-primary" style={{ width: `${(t.pts / maxTop) * 100}%` }} />
+                    <div className="bar-animated h-full rounded-full bg-primary" style={{ width: `${(t.pts / maxTop) * 100}%` }} />
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">{t.season} · week {t.week}</p>
                 </div>
@@ -237,7 +237,7 @@ export function LeagueHome() {
                     <span className="text-sm font-bold text-foreground">{p.pts.toLocaleString()}</span>
                   </div>
                   <div className="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-secondary-foreground/70" style={{ width: `${(p.pts / maxPts) * 100}%` }} />
+                    <div className="bar-animated h-full rounded-full bg-secondary-foreground/70" style={{ width: `${(p.pts / maxPts) * 100}%` }} />
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">{p.seasons} season{p.seasons === 1 ? "" : "s"}</p>
                 </div>
@@ -276,7 +276,7 @@ export function LeagueHome() {
         <h2 className="mb-4 flex items-center gap-2 text-4xl text-foreground"><Crown className="h-7 w-7 text-primary" /> More fun facts</h2>
         <div className="grid gap-3 sm:grid-cols-3">
           {restFacts.map((f) => (
-            <Card key={f.title}><CardContent className="p-4">
+            <Card key={f.title} className="card-lift"><CardContent className="p-4">
               <p className="text-xs uppercase tracking-wider text-muted-foreground">{f.title}</p>
               <p className="text-3xl text-primary">{f.value}</p>
               <p className="text-sm text-foreground">{f.detail}</p>
