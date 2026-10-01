@@ -400,6 +400,61 @@ export const getDraft = createServerFn({ method: "POST" })
     return { error, years, season: s.seasonId ?? null, picks };
   });
 
+// ---------- Rosters ----------
+
+const SLOT_LABELS: Record<number, string> = {
+  0: "QB", 1: "TQB", 2: "RB", 3: "RB/WR", 4: "WR", 5: "WR/TE", 6: "TE", 7: "OP",
+  8: "DT", 9: "DE", 10: "LB", 11: "DL", 12: "CB", 13: "S", 14: "DB", 15: "DP",
+  16: "D/ST", 17: "K", 18: "P", 19: "HC", 20: "Bench", 21: "IR", 23: "FLEX", 24: "EDR", 25: "RB",
+};
+const slotLabel = (id?: number) => SLOT_LABELS[id ?? -1] ?? `Slot ${id ?? "?"}`;
+const slotOrder = (id?: number) => (id === 20 ? 50 : id === 21 ? 60 : (id ?? 99));
+
+export type RosterPlayer = { name: string; slot: string; acquired: string | null };
+export type RosterTeam = { teamId: number; team: string; managers: string[]; players: RosterPlayer[] };
+
+export const getRosters = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { season?: number | undefined; week?: number | undefined }) => ({
+    season: Number.isInteger(input?.season) ? input.season : undefined,
+    week: Number.isInteger(input?.week) ? input.week : undefined,
+  }))
+  .handler(async ({ data }) => {
+    const L = await lib();
+    const { seasons, error } = await L.loadAllSeasons();
+    const years = seasons.map((s) => s.seasonId ?? 0);
+    const s = seasons.find((x) => x.seasonId === data.season) ?? seasons[0];
+    if (!s) return { error: error ?? "No data yet.", years, season: null, week: 0, weeks: [] as number[], teams: [] as RosterTeam[] };
+    const periodCount = s.settings?.scheduleSettings?.matchupPeriodCount ?? 17;
+    const latest = Math.min(s.status?.latestScoringPeriod ?? periodCount, periodCount) || 1;
+    const week = data.week && data.week >= 1 && data.week <= periodCount ? data.week : latest;
+    const raw = await L.fetchRosterWeek(s.seasonId ?? 0, week);
+    if (!raw) return { error: "Couldn't load rosters from ESPN for that week.", years, season: s.seasonId ?? null, week, weeks: Array.from({ length: periodCount }, (_, i) => i + 1), teams: [] as RosterTeam[] };
+    const ids = [...new Set(raw.flatMap((t) => (t.roster?.entries ?? []).map((e) => e.playerId ?? 0)).filter(Boolean))];
+    const names = await L.loadPlayerNames(s.seasonId ?? 0, ids);
+    const byId = new Map((s.teams ?? []).map((t) => [t.id, t]));
+    const teams: RosterTeam[] = raw
+      .map((rt) => {
+        const t = byId.get(rt.id);
+        const players: RosterPlayer[] = (rt.roster?.entries ?? [])
+          .map((e) => ({
+            name: names[e.playerId ?? 0] ?? `Player #${e.playerId}`,
+            slot: slotLabel(e.lineupSlotId),
+            acquired: e.acquisitionDate ? new Date(e.acquisitionDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : null,
+          }))
+          .sort((a, b) => slotOrderFromLabel(a.slot) - slotOrderFromLabel(b.slot));
+        return { teamId: rt.id ?? 0, team: t ? L.teamName(t) : `Team ${rt.id}`, managers: t ? L.teamManagers(s, t) : [], players };
+      })
+      .sort((a, b) => a.team.localeCompare(b.team));
+    return { error, years, season: s.seasonId ?? null, week, weeks: Array.from({ length: periodCount }, (_, i) => i + 1), teams };
+  });
+
+function slotOrderFromLabel(slot: string) {
+  if (slot === "Bench") return 50;
+  if (slot === "IR") return 60;
+  return 0;
+}
+
 // ---------- Single manager profile ----------
 
 export const getManagerProfile = createServerFn({ method: "POST" })
