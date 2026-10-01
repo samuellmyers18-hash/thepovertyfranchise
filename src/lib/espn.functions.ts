@@ -236,3 +236,24 @@ export const saveTeamName = createServerFn({ method: "POST" })
     if (error) return { ok: false, error: "Couldn't save that name." };
     return { ok: true };
   });
+
+export const saveManagerName = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { managerKey: string; name: string }) => {
+    const name = String(input?.name ?? "").trim().slice(0, 60);
+    const managerKey = String(input?.managerKey ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+    if (!managerKey) throw new Error("Invalid manager.");
+    return { managerKey, name };
+  })
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    if (!data.name) {
+      await context.supabase.from("manager_names").delete().eq("manager_key", data.managerKey);
+      return { ok: true };
+    }
+    const { error } = await context.supabase
+      .from("manager_names")
+      .upsert({ manager_key: data.managerKey, display_name: data.name });
+    if (error) return { ok: false, error: "Couldn't save that name." };
+    return { ok: true };
+  });
