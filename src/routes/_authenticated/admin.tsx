@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { connectEspn, disconnectEspn, getEspnStatus } from "@/lib/espn.functions";
+import { connectEspn, disconnectEspn, getEspnStatus, getIsAdmin, getLeagueTeams, saveTeamName } from "@/lib/espn.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
   ),
 });
 
-function ConnectPage() {
+function AdminTools() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fetchStatus = useServerFn(getEspnStatus);
@@ -83,7 +83,7 @@ function ConnectPage() {
       <div className="mx-auto max-w-2xl px-6 py-14">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">Step 1</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">Admin</p>
             <h1 className="mt-2 text-4xl text-foreground">Connect ESPN</h1>
           </div>
           <Button variant="secondary" size="sm" onClick={handleSignOut}>
