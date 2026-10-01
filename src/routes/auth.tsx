@@ -32,7 +32,7 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/connect", replace: true });
+      if (data.user) navigate({ to: "/", replace: true });
     });
   }, [navigate]);
 
@@ -55,11 +55,11 @@ function AuthPage() {
           setMode("signin");
           return;
         }
-        navigate({ to: "/connect" });
+        navigate({ to: "/" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: "/connect" });
+        navigate({ to: "/" });
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Something went wrong. Try again.");
@@ -77,7 +77,7 @@ function AuthPage() {
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/connect" });
+    navigate({ to: "/" });
   }
 
   return (
