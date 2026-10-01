@@ -101,8 +101,8 @@ async function fetchLeague(leagueId: string, swid: string, espnS2: string) {
         const owner = json.members?.find((m) => t.owners?.includes(m.id ?? ""));
         return {
           id: t.id as number,
-          espnName: t.name ?? `${t.location ?? ""} ${t.nickname ?? ""}`.trim() || `Team ${t.id}`,
-          ownerName: owner ? [owner.firstName, owner.lastName].filter(Boolean).join(" ") || owner.displayName || null : null,
+          espnName: (t.name ?? `${t.location ?? ""} ${t.nickname ?? ""}`.trim()) || `Team ${t.id}`,
+          ownerName: owner ? ([owner.firstName, owner.lastName].filter(Boolean).join(" ") || owner.displayName) ?? null : null,
         };
       }),
   };

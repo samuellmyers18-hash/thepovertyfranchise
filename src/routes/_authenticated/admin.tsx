@@ -1,10 +1,10 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { connectEspn, disconnectEspn, getEspnStatus } from "@/lib/espn.functions";
+import { connectEspn, disconnectEspn, getEspnStatus, getIsAdmin, getLeagueTeams, saveTeamName } from "@/lib/espn.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
   ),
 });
 
-function ConnectPage() {
+function AdminTools() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fetchStatus = useServerFn(getEspnStatus);
@@ -83,7 +83,7 @@ function ConnectPage() {
       <div className="mx-auto max-w-2xl px-6 py-14">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">Step 1</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">Admin</p>
             <h1 className="mt-2 text-4xl text-foreground">Connect ESPN</h1>
           </div>
           <Button variant="secondary" size="sm" onClick={handleSignOut}>
@@ -204,7 +204,91 @@ function ConnectPage() {
             </form>
           </CardContent>
         </Card>
+
+        {status.data?.connected && <TeamNamesCard />}
       </div>
     </main>
+  );
+}
+
+function ConnectPage() {
+  const checkAdmin = useServerFn(getIsAdmin);
+  const admin = useQuery({ queryKey: ["is-admin"], queryFn: () => checkAdmin({ data: undefined }) });
+
+  if (admin.isLoading) {
+    return <main className="field-grid min-h-screen bg-background" />;
+  }
+  if (!admin.data?.isAdmin) {
+    return (
+      <main className="field-grid flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="text-center">
+          <h1 className="text-4xl text-foreground">Admins only</h1>
+          <p className="mt-3 text-muted-foreground">This area is for the league admin.</p>
+          <Button asChild className="mt-6">
+            <Link to="/">Back to home</Link>
+          </Button>
+        </div>
+      </main>
+    );
+  }
+  return <AdminTools />;
+}
+
+function TeamNamesCard() {
+  const fetchTeams = useServerFn(getLeagueTeams);
+  const save = useServerFn(saveTeamName);
+  const queryClient = useQueryClient();
+  const teams = useQuery({ queryKey: ["league-teams"], queryFn: () => fetchTeams({ data: undefined }) });
+  const [drafts, setDrafts] = useState<Record<number, string>>({});
+  const [savingId, setSavingId] = useState<number | null>(null);
+
+  async function handleSave(teamId: number, value: string) {
+    if (!teams.data?.leagueId) return;
+    setSavingId(teamId);
+    try {
+      const res = await save({ data: { leagueId: teams.data.leagueId, teamId, name: value } });
+      if (!res.ok) toast.error(res.error ?? "Couldn't save.");
+      else {
+        toast.success(value.trim() ? "Team name saved." : "Reset to ESPN name.");
+        await queryClient.invalidateQueries({ queryKey: ["league-teams"] });
+      }
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  return (
+    <Card className="mt-6">
+      <CardHeader>
+        <CardTitle className="text-2xl">Team names</CardTitle>
+        <CardDescription>Set the name the site shows for each team. Leave it blank to use the ESPN name.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {teams.isLoading && <p className="text-sm text-muted-foreground">Loading teams from ESPN…</p>}
+        {teams.data?.error && <p className="text-sm text-destructive">{teams.data.error}</p>}
+        {teams.data?.teams.map((team) => {
+          const value = drafts[team.id] ?? team.customName ?? "";
+          return (
+            <div key={team.id} className="rounded-md border border-border bg-secondary/40 p-4">
+              <p className="text-sm text-muted-foreground">
+                ESPN: <span className="text-foreground">{team.espnName}</span>
+                {team.ownerName ? ` · ${team.ownerName}` : ""}
+              </p>
+              <div className="mt-2 flex gap-2">
+                <Input
+                  aria-label={`Display name for ${team.espnName}`}
+                  value={value}
+                  placeholder={team.espnName}
+                  onChange={(e) => setDrafts((d) => ({ ...d, [team.id]: e.target.value }))}
+                />
+                <Button type="button" onClick={() => handleSave(team.id, value)} disabled={savingId === team.id}>
+                  {savingId === team.id ? "Saving…" : "Save"}
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
   );
 }

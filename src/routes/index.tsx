@@ -26,14 +26,25 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setSignedIn(Boolean(data.user)));
+    async function load(userId: string | undefined) {
+      setSignedIn(Boolean(userId));
+      if (!userId) return setIsAdmin(false);
+      const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+      setIsAdmin(Boolean(data));
+    }
+    supabase.auth.getUser().then(({ data }) => load(data.user?.id));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      setSignedIn(Boolean(session?.user));
+      load(session?.user?.id);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  async function signOut() {
+    await supabase.auth.signOut();
+  }
 
   return (
     <main className="field-grid min-h-screen bg-background">
@@ -45,15 +56,21 @@ function Index() {
           Franchise
         </h1>
         <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-          Every season, every matchup, every grudge — all in one place. Step one is getting you signed in and
-          hooked up to the league so the history can start flowing in.
+          Every season, every matchup, every grudge — all in one place.
         </p>
 
         <div className="mt-10 flex flex-wrap gap-3">
           {signedIn ? (
-            <Button asChild size="lg">
-              <Link to="/connect">Go to your league setup</Link>
-            </Button>
+            <>
+              {isAdmin && (
+                <Button asChild size="lg">
+                  <Link to="/admin">Admin settings</Link>
+                </Button>
+              )}
+              <Button size="lg" variant="secondary" onClick={signOut}>
+                Sign out
+              </Button>
+            </>
           ) : (
             <Button asChild size="lg">
               <Link to="/auth">Sign in or create an account</Link>
