@@ -130,13 +130,14 @@ export type WeekPoint = { week: number; avg: number; high: number; highWho: stri
 export type TopScore = { who: string; pts: number; season: number; week: number };
 export type PointsLeader = { name: string; pts: number; seasons: number };
 export type MatchupRow = { homeTeam: string; awayTeam: string; homeManagers: string[]; awayManagers: string[]; homePts: number; awayPts: number };
+export type MoveRow = { kind: "Waiver" | "Free agent" | "Trade"; date: string; team: string; managers: string[]; players: string; bid: number | null };
 
 export const getLeagueHome = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
     const L = await lib();
     const { seasons, error } = await L.loadAllSeasons();
-    if (!seasons.length) return { error: error ?? "No data yet.", season: null, week: 0, standings: [], power: [], facts: [], trend: [], topScores: [], pointsLeaders: [], matchups: [], featured: null };
+    if (!seasons.length) return { error: error ?? "No data yet.", season: null, week: 0, standings: [], power: [], facts: [], trend: [], topScores: [], pointsLeaders: [], matchups: [], featured: null, moves: [] };
 
     // Use the newest season with completed games.
     const cur: RawSeason = seasons.find((s) => (s.schedule ?? []).some(done)) ?? seasons[0]!;
@@ -273,7 +274,44 @@ export const getLeagueHome = createServerFn({ method: "POST" })
     }
     const featured = matchups.reduce<MatchupRow | null>((b, m) => (b === null || m.homePts + m.awayPts > b.homePts + b.awayPts ? m : b), null);
 
-    return { error, season: cur.seasonId ?? null, week: lastWeek, standings, power, facts, trend, topScores, pointsLeaders, matchups, featured };
+    // Recent roster moves (waivers, free agents, trades) from the current season.
+    const playerNames = await L.loadPlayerNames(conn, cur.seasonId ?? 0);
+    const teamLabel = (id?: number) => {
+      const t = teams.find((x) => x.id === id);
+      return t ? { team: label(t).team, managers: L.teamManagers(cur, t) } : { team: "?", managers: [] as string[] };
+    };
+    const moves: MoveRow[] = (cur.transactions ?? [])
+      .filter((t) => (t.status ?? "EXECUTED") === "EXECUTED" && ["WAIVER", "FREEAGENT", "TRADE"].includes(t.type ?? ""))
+      .sort((a, b) => (b.proposedDate ?? 0) - (a.proposedDate ?? 0))
+      .slice(0, 12)
+      .map((t) => {
+        const date = new Date(t.proposedDate ?? 0).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        if (t.type === "TRADE") {
+          const adds = (t.items ?? []).filter((i) => i.type === "ADD");
+          const byTo = new Map<number, string[]>();
+          for (const i of adds) {
+            const to = i.toTeamId ?? 0;
+            byTo.set(to, [...(byTo.get(to) ?? []), playerNames.get(i.playerId ?? 0) ?? "Unknown"]);
+          }
+          return {
+            kind: "Trade" as const, date,
+            team: [...byTo.keys()].map((id) => teamLabel(id).team).join(" ↔ "),
+            managers: [...new Set([...byTo.keys()].flatMap((id) => teamLabel(id).managers))],
+            players: [...byTo.entries()].map(([id, ps]) => `${teamLabel(id).team} gets ${ps.join(", ")}`).join(" · "),
+            bid: null,
+          };
+        }
+        const add = (t.items ?? []).find((i) => i.type === "ADD");
+        const drop = (t.items ?? []).find((i) => i.type === "DROP");
+        const who = teamLabel(t.teamId ?? add?.toTeamId);
+        const parts = [
+          add ? `+ ${playerNames.get(add.playerId ?? 0) ?? "Unknown"}` : null,
+          drop ? `− ${playerNames.get(drop.playerId ?? 0) ?? "Unknown"}` : null,
+        ].filter(Boolean).join(" / ");
+        return { kind: t.type === "WAIVER" ? ("Waiver" as const) : ("Free agent" as const), date, team: who.team, managers: who.managers, players: parts, bid: t.type === "WAIVER" ? (t.bidAmount ?? null) : null };
+      });
+
+    return { error, season: cur.seasonId ?? null, week: lastWeek, standings, power, facts, trend, topScores, pointsLeaders, matchups, featured, moves };
   });
 
 // ---------- Rivalries ----------
