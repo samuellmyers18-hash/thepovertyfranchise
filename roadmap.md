@@ -20,3 +20,4 @@
 - [ ] Rosters: roster page + past rosters by week on manager profiles
 - [ ] Home matchups/featured: current week w/ projections; separate past-matchups page
 - [ ] Power rankings: factor in current roster projections
+- [ ] Admin settings: edit manager names (incl. past managers), not old teams
