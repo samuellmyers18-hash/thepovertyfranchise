@@ -9,3 +9,4 @@
 - [x] Power rankings blend roster projections
 - [x] Admin: team-name editor (current teams) + manager-name editor (incl. past managers)
 - [x] Player rankings model (original request — not built yet)
+- [ ] Player rankings: pull data from Flock Fantasy
