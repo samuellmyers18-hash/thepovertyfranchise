@@ -130,6 +130,16 @@ export function LeagueHome() {
         </section>
       )}
 
+      {data.hotTake && (
+        <section className="card-lift animate-fade-up relative overflow-hidden rounded-lg border border-accent/50 bg-gradient-to-br from-accent/15 via-card to-card p-6">
+          <Flame className="absolute -right-4 -top-4 h-28 w-28 text-accent/10" />
+          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-accent"><Flame className="h-4 w-4" /> Hot take of the week</p>
+          <h2 className="mt-2 text-4xl leading-none text-foreground sm:text-5xl">{data.hotTake.headline}</h2>
+          <p className="mt-2 max-w-3xl text-base leading-relaxed text-muted-foreground">{data.hotTake.body}</p>
+          <p className="mt-2 text-xs uppercase tracking-wider text-muted-foreground">{data.hotTake.team} · <ManagerNames names={data.hotTake.managers} /></p>
+        </section>
+      )}
+
       {heroFact && (
         <section className="animate-glow animate-fade-up relative overflow-hidden rounded-lg border border-primary/40 bg-gradient-to-br from-primary/15 via-card to-card p-8">
           <Flame className="absolute -right-6 -top-6 h-40 w-40 text-primary/10" />
