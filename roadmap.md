@@ -19,3 +19,4 @@
 - [ ] Home: recent moves (pickups, waivers, trades)
 - [ ] Rosters: roster page + past rosters by week on manager profiles
 - [ ] Home matchups/featured: current week w/ projections; separate past-matchups page
+- [ ] Power rankings: factor in current roster projections
