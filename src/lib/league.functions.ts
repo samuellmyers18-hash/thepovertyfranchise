@@ -300,8 +300,8 @@ export const getRivalries = createServerFn({ method: "POST" })
         }
       }
     }
-    const rivalries = [...map.values()]
-      .map((r) => ({ ...r, aPts: r2(r.aPts), bPts: r2(r.bPts), avgMargin: r2(Math.abs(r.aPts - r.bPts) / r.games), closest: r.closest === Infinity ? null : r2(r.closest), seasonCount: r.seasons.size, seasons: undefined }))
+    const rivalries: Rivalry[] = [...map.values()]
+      .map(({ seasons, ...r }) => ({ ...r, aPts: r2(r.aPts), bPts: r2(r.bPts), avgMargin: r2(Math.abs(r.aPts - r.bPts) / r.games), closest: r.closest === Infinity ? null : r2(r.closest), seasonCount: seasons.size }))
       .sort((p, q) => q.games - p.games || p.avgMargin - q.avgMargin);
     return { error, rivalries };
   });
