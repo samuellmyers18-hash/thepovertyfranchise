@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { getNewsletter } from "@/lib/history.functions";
-import { ManagerNames } from "@/components/LeagueHome";
+import { ManagerNames, PredictionBox } from "@/components/LeagueHome";
 
 const DESC = "The Poverty Post: a weekly newspaper of recaps, headlines and standings from The Poverty Franchise.";
 export const Route = createFileRoute("/_authenticated/newsletter")({
