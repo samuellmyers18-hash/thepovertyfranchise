@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { getNewsletter } from "@/lib/history.functions";
-import { ManagerNames } from "@/components/LeagueHome";
+import { ManagerNames, PredictionBox } from "@/components/LeagueHome";
 
 const DESC = "The Poverty Post: a weekly newspaper of recaps, headlines and standings from The Poverty Franchise.";
 export const Route = createFileRoute("/_authenticated/newsletter")({
@@ -216,7 +216,8 @@ function NewsletterPage() {
                         <span className="text-muted-foreground">vs</span>
                         <div className="text-right"><Who x={p.away} /><p className="text-xs text-muted-foreground">{p.away.rec} · {p.away.avg.toFixed(1)}/wk</p></div>
                       </div>
-                      <p className="mt-2 text-xs text-muted-foreground">All-time: {p.h2h.aw}–{p.h2h.bw} · <span className="text-primary">Post pick: {p.pick}</span></p>
+                      <p className="mt-2 text-xs text-muted-foreground">All-time: {p.h2h.aw}–{p.h2h.bw}</p>
+                      <PredictionBox p={p.prediction} home={p.home.managers} away={p.away.managers} />
                     </div>
                   ))}
                 </div>
