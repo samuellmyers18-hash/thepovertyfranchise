@@ -46,14 +46,14 @@ export function MatchupCard({ m, big }: { m: MatchupRow; big?: boolean }) {
   const homeWon = m.homePts > m.awayPts;
   const tied = m.homePts === m.awayPts;
   return (
-    <div className={`card-lift animate-fade-up rounded-md border bg-card ${big ? "animate-glow border-primary/50 p-6" : "border-border p-4"}`}>
+    <div className={`card-lift animate-fade-up rounded-md border bg-card ${big ? "animate-glow border-primary/50 p-4 sm:p-6" : "border-border p-3 sm:p-4"}`}>
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className={`truncate font-semibold ${played && homeWon && !tied ? "text-primary" : "text-foreground"} ${big ? "text-xl" : ""}`}>{m.homeTeam}</p>
           <ManagerNames names={m.homeManagers.join(" & ")} className="text-xs text-muted-foreground" />
         </div>
         <div className="text-right">
-          <p className={`${big ? "text-4xl" : "text-2xl"} font-black ${played && homeWon && !tied ? "text-primary" : "text-foreground"}`}>{m.homePts.toFixed(1)}</p>
+          <p className={`${big ? "text-3xl sm:text-4xl" : "text-xl sm:text-2xl"} font-black ${played && homeWon && !tied ? "text-primary" : "text-foreground"}`}>{m.homePts.toFixed(1)}</p>
           {m.homeProj != null && <p className="text-[10px] uppercase tracking-wide text-muted-foreground">proj {m.homeProj.toFixed(1)}</p>}
         </div>
       </div>
@@ -66,7 +66,7 @@ export function MatchupCard({ m, big }: { m: MatchupRow; big?: boolean }) {
           <ManagerNames names={m.awayManagers.join(" & ")} className="text-xs text-muted-foreground" />
         </div>
         <div className="text-right">
-          <p className={`${big ? "text-4xl" : "text-2xl"} font-black ${played && !homeWon && !tied ? "text-primary" : "text-foreground"}`}>{m.awayPts.toFixed(1)}</p>
+          <p className={`${big ? "text-3xl sm:text-4xl" : "text-xl sm:text-2xl"} font-black ${played && !homeWon && !tied ? "text-primary" : "text-foreground"}`}>{m.awayPts.toFixed(1)}</p>
           {m.awayProj != null && <p className="text-[10px] uppercase tracking-wide text-muted-foreground">proj {m.awayProj.toFixed(1)}</p>}
         </div>
       </div>
@@ -108,50 +108,50 @@ export function LeagueHome() {
   const maxTop = Math.max(1, ...data.topScores.map((t) => t.pts));
 
   return (
-    <div className="hero-backdrop -mx-4 mt-6 space-y-12 px-4 pb-8 pt-6">
-      <p className="animate-fade-up text-sm uppercase tracking-[0.3em] text-primary">
+    <div className="hero-backdrop -mx-4 mt-4 space-y-7 px-4 pb-8 pt-4 sm:mt-6 sm:space-y-12 sm:pt-6">
+      <p className="animate-fade-up text-xs uppercase tracking-[0.3em] text-primary sm:text-sm">
         {data.season} season · through week {data.week}
       </p>
 
       {data.featured && (
         <section>
-          <h2 className="mb-4 flex items-center gap-2 text-4xl text-foreground"><Star className="h-7 w-7 text-primary" /> Featured matchup</h2>
-          <p className="mb-4 text-sm text-muted-foreground">Week {data.week}'s highest-scoring battle.</p>
+          <h2 className="mb-2 flex items-center gap-2 text-2xl text-foreground sm:mb-4 sm:text-4xl"><Star className="h-5 w-5 text-primary sm:h-7 sm:w-7" /> Featured matchup</h2>
+          <p className="mb-3 text-xs text-muted-foreground sm:mb-4 sm:text-sm">Week {data.week}'s highest-scoring battle.</p>
           <MatchupCard m={data.featured} big />
         </section>
       )}
 
       {data.matchups.length > 0 && (
         <section>
-          <h2 className="mb-4 flex items-center gap-2 text-4xl text-foreground"><CalendarDays className="h-7 w-7 text-primary" /> Week {data.week} matchups</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <h2 className="mb-3 flex items-center gap-2 text-2xl text-foreground sm:mb-4 sm:text-4xl"><CalendarDays className="h-5 w-5 text-primary sm:h-7 sm:w-7" /> Week {data.week} matchups</h2>
+          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
             {data.matchups.map((m, i) => <MatchupCard key={i} m={m} />)}
           </div>
         </section>
       )}
 
       {data.hotTake && (
-        <section className="card-lift animate-fade-up relative overflow-hidden rounded-lg border border-accent/50 bg-gradient-to-br from-accent/15 via-card to-card p-6">
-          <Flame className="absolute -right-4 -top-4 h-28 w-28 text-accent/10" />
-          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-accent"><Flame className="h-4 w-4" /> Hot take of the week</p>
-          <h2 className="mt-2 text-4xl leading-none text-foreground sm:text-5xl">{data.hotTake.headline}</h2>
-          <p className="mt-2 max-w-3xl text-base leading-relaxed text-muted-foreground">{data.hotTake.body}</p>
+        <section className="card-lift animate-fade-up relative overflow-hidden rounded-lg border border-accent/50 bg-gradient-to-br from-accent/15 via-card to-card p-4 sm:p-6">
+          <Flame className="absolute -right-4 -top-4 h-20 w-20 text-accent/10 sm:h-28 sm:w-28" />
+          <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-accent sm:text-xs"><Flame className="h-4 w-4" /> Hot take of the week</p>
+          <h2 className="mt-2 text-2xl leading-none text-foreground sm:text-5xl">{data.hotTake.headline}</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground sm:text-base">{data.hotTake.body}</p>
           <p className="mt-2 text-xs uppercase tracking-wider text-muted-foreground">{data.hotTake.team} · <ManagerNames names={data.hotTake.managers} /></p>
         </section>
       )}
 
       {heroFact && (
-        <section className="animate-glow animate-fade-up relative overflow-hidden rounded-lg border border-primary/40 bg-gradient-to-br from-primary/15 via-card to-card p-8">
-          <Flame className="absolute -right-6 -top-6 h-40 w-40 text-primary/10" />
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary">League record</p>
-          <p className="gold-text mt-2 text-7xl font-black sm:text-8xl">{heroFact.value}</p>
-          <p className="mt-2 text-lg text-muted-foreground">{heroFact.detail}</p>
+        <section className="animate-glow animate-fade-up relative overflow-hidden rounded-lg border border-primary/40 bg-gradient-to-br from-primary/15 via-card to-card p-5 sm:p-8">
+          <Flame className="absolute -right-6 -top-6 h-28 w-28 text-primary/10 sm:h-40 sm:w-40" />
+          <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-primary sm:text-xs">League record</p>
+          <p className="gold-text mt-1 text-5xl font-black sm:mt-2 sm:text-8xl">{heroFact.value}</p>
+          <p className="mt-1 text-sm text-muted-foreground sm:mt-2 sm:text-lg">{heroFact.detail}</p>
         </section>
       )}
 
       <section>
-        <h2 className="text-4xl text-foreground">Power rankings</h2>
-        <p className="mb-4 text-sm text-muted-foreground">
+        <h2 className="text-2xl text-foreground sm:text-4xl">Power rankings</h2>
+        <p className="mb-3 text-xs text-muted-foreground sm:mb-4 sm:text-sm">
           25% all-play record, 20% actual record, 20% last-3-week scoring, 15% this week's projection, 20% rest-of-season projection of each team's best lineup.
         </p>
         <div className="overflow-x-auto rounded-md border border-border">
@@ -160,7 +160,7 @@ export function LeagueHome() {
             <tbody>
               {data.power.map((p) => (
                 <tr key={p.teamId} className="row-hover border-t border-border">
-                  <td className="px-3 py-2 text-2xl text-primary">{p.rank}</td>
+                  <td className="px-3 py-2 text-lg text-primary sm:text-2xl">{p.rank}</td>
                   <td className="px-3 py-2"><span className="font-semibold text-foreground">{p.team}</span><ManagerNames names={p.managers} className="block text-xs text-muted-foreground" /></td>
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
@@ -184,7 +184,7 @@ export function LeagueHome() {
       </section>
 
       <section>
-        <h2 className="mb-4 text-4xl text-foreground">Standings</h2>
+        <h2 className="mb-3 text-2xl text-foreground sm:mb-4 sm:text-4xl">Standings</h2>
         <div className="overflow-x-auto rounded-md border border-border">
           <table className="w-full text-sm">
             <thead className="bg-secondary text-muted-foreground"><tr>{["", "Team", "W-L", "PF", "PA", "Streak"].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
@@ -206,9 +206,9 @@ export function LeagueHome() {
 
       {data.trend.length > 1 && (
         <section>
-          <h2 className="flex items-center gap-2 text-4xl text-foreground"><TrendingUp className="h-7 w-7 text-primary" /> Scoring by week</h2>
-          <p className="mb-4 text-sm text-muted-foreground">Solid bars are the league average each week; the lighter cap is the week's highest score. Hover a bar for details.</p>
-          <div className="rounded-md border border-border bg-card p-4">
+          <h2 className="flex items-center gap-2 text-2xl text-foreground sm:text-4xl"><TrendingUp className="h-5 w-5 text-primary sm:h-7 sm:w-7" /> Scoring by week</h2>
+          <p className="mb-3 text-xs text-muted-foreground sm:mb-4 sm:text-sm">Solid bars are the league average each week; the lighter cap is the week's highest score. Hover a bar for details.</p>
+          <div className="rounded-md border border-border bg-card p-3 sm:p-4">
             <TrendChart trend={data.trend} />
           </div>
         </section>
@@ -216,7 +216,7 @@ export function LeagueHome() {
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div>
-          <h2 className="flex items-center gap-2 text-3xl text-foreground"><Trophy className="h-6 w-6 text-primary" /> Highest weeks ever</h2>
+          <h2 className="flex items-center gap-2 text-xl text-foreground sm:text-3xl"><Trophy className="h-5 w-5 text-primary sm:h-6 sm:w-6" /> Highest weeks ever</h2>
           <div className="mt-4 space-y-3">
             {data.topScores.map((t, i) => (
               <div key={i} className="flex items-center gap-3">
@@ -236,7 +236,7 @@ export function LeagueHome() {
           </div>
         </div>
         <div>
-          <h2 className="flex items-center gap-2 text-3xl text-foreground"><BarChart3 className="h-6 w-6 text-primary" /> Career points leaders</h2>
+          <h2 className="flex items-center gap-2 text-xl text-foreground sm:text-3xl"><BarChart3 className="h-5 w-5 text-primary sm:h-6 sm:w-6" /> Career points leaders</h2>
           <div className="mt-4 space-y-3">
             {data.pointsLeaders.map((p, i) => (
               <div key={p.name} className="flex items-center gap-3">
@@ -259,10 +259,10 @@ export function LeagueHome() {
 
       {data.moves.length > 0 && (
         <section>
-          <h2 className="mb-4 flex items-center gap-2 text-4xl text-foreground"><ArrowLeftRight className="h-7 w-7 text-primary" /> Recent moves</h2>
+          <h2 className="mb-3 flex items-center gap-2 text-2xl text-foreground sm:mb-4 sm:text-4xl"><ArrowLeftRight className="h-5 w-5 text-primary sm:h-7 sm:w-7" /> Recent moves</h2>
           <div className="divide-y divide-border rounded-md border border-border bg-card">
             {data.moves.map((mv, i) => (
-              <div key={i} className="flex items-start justify-between gap-4 p-4">
+              <div key={i} className="flex items-start justify-between gap-3 p-3 sm:gap-4 sm:p-4">
                 <div className="min-w-0">
                   <p className="text-sm">
                     <span className={`mr-2 inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${mv.kind === "Trade" ? "bg-primary/20 text-primary" : mv.kind === "Waiver" ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"}`}>{mv.kind}</span>
@@ -283,13 +283,13 @@ export function LeagueHome() {
       )}
 
       <section>
-        <h2 className="mb-4 flex items-center gap-2 text-4xl text-foreground"><Crown className="h-7 w-7 text-primary" /> More fun facts</h2>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <h2 className="mb-3 flex items-center gap-2 text-2xl text-foreground sm:mb-4 sm:text-4xl"><Crown className="h-5 w-5 text-primary sm:h-7 sm:w-7" /> More fun facts</h2>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
           {restFacts.map((f) => (
-            <Card key={f.title} className="card-lift"><CardContent className="p-4">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">{f.title}</p>
-              <p className="text-3xl text-primary">{f.value}</p>
-              <p className="text-sm text-foreground">{f.detail}</p>
+            <Card key={f.title} className="card-lift"><CardContent className="p-3 sm:p-4">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground sm:text-xs">{f.title}</p>
+              <p className="text-2xl text-primary sm:text-3xl">{f.value}</p>
+              <p className="text-xs text-foreground sm:text-sm">{f.detail}</p>
             </CardContent></Card>
           ))}
         </div>
