@@ -149,7 +149,7 @@ export function LeagueHome() {
             <thead className="bg-secondary text-muted-foreground"><tr>{["#", "Team", "Score", "Record", "All-play", "Last 3 avg", "Proj", "ROS proj", ""].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
             <tbody>
               {data.power.map((p) => (
-                <tr key={p.teamId} className="border-t border-border">
+                <tr key={p.teamId} className="row-hover border-t border-border">
                   <td className="px-3 py-2 text-2xl text-primary">{p.rank}</td>
                   <td className="px-3 py-2"><span className="font-semibold text-foreground">{p.team}</span><ManagerNames names={p.managers} className="block text-xs text-muted-foreground" /></td>
                   <td className="px-3 py-2">
@@ -180,7 +180,7 @@ export function LeagueHome() {
             <thead className="bg-secondary text-muted-foreground"><tr>{["", "Team", "W-L", "PF", "PA", "Streak"].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
             <tbody>
               {data.standings.map((s, i) => (
-                <tr key={s.teamId} className="border-t border-border">
+                <tr key={s.teamId} className="row-hover border-t border-border">
                   <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
                   <td className="px-3 py-2"><span className="font-semibold text-foreground">{s.team}</span><ManagerNames names={s.managers} className="block text-xs text-muted-foreground" /></td>
                   <td className="px-3 py-2">{s.wins}-{s.losses}{s.ties ? `-${s.ties}` : ""}</td>

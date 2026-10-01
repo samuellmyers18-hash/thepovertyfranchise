@@ -218,6 +218,13 @@
   animation: bar-grow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+@utility row-hover {
+  transition: background-color 0.2s;
+  &:hover {
+    background-color: color-mix(in oklab, var(--primary) 7%, transparent);
+  }
+}
+
 @utility hero-backdrop {
   background:
     radial-gradient(ellipse 60% 45% at 50% -5%, color-mix(in oklab, var(--primary) 14%, transparent), transparent 70%),
