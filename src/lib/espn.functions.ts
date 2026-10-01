@@ -95,6 +95,16 @@ async function fetchLeague(leagueId: string, swid: string, espnS2: string) {
     ok: true as const,
     displayName: me ? (me.displayName ?? [me.firstName, me.lastName].filter(Boolean).join(" ")) : null,
     leagues: [league],
+    teams: (json.teams ?? [])
+      .filter((t) => typeof t.id === "number")
+      .map((t) => {
+        const owner = json.members?.find((m) => t.owners?.includes(m.id ?? ""));
+        return {
+          id: t.id as number,
+          espnName: t.name ?? `${t.location ?? ""} ${t.nickname ?? ""}`.trim() || `Team ${t.id}`,
+          ownerName: owner ? [owner.firstName, owner.lastName].filter(Boolean).join(" ") || owner.displayName || null : null,
+        };
+      }),
   };
 }
 
@@ -165,5 +175,64 @@ export const disconnectEspn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await context.supabase.from("espn_connections").delete().eq("user_id", context.userId);
+    return { ok: true };
+  });
+
+export type LeagueTeam = { id: number; espnName: string; ownerName: string | null; customName: string | null };
+
+async function assertAdmin(supabase: { rpc: (...a: any[]) => any }, userId: string) {
+  const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+  if (!data) throw new Error("Forbidden");
+}
+
+export const getIsAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    return { isAdmin: Boolean(data) };
+  });
+
+export const getLeagueTeams = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ leagueId: string | null; teams: LeagueTeam[]; error?: string }> => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data: conn } = await context.supabase
+      .from("espn_connections")
+      .select("swid, espn_s2, league_id")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (!conn?.league_id) return { leagueId: null, teams: [] };
+
+    const result = await fetchLeague(conn.league_id, conn.swid, conn.espn_s2);
+    if (!result.ok) return { leagueId: conn.league_id, teams: [], error: result.error };
+
+    const { data: overrides } = await context.supabase
+      .from("team_names")
+      .select("espn_team_id, display_name")
+      .eq("league_id", conn.league_id);
+    const map = new Map((overrides ?? []).map((o) => [o.espn_team_id, o.display_name]));
+    return {
+      leagueId: conn.league_id,
+      teams: result.teams.map((t) => ({ ...t, customName: map.get(t.id) ?? null })),
+    };
+  });
+
+export const saveTeamName = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { leagueId: string; teamId: number; name: string }) => {
+    const name = String(input?.name ?? "").trim().slice(0, 60);
+    if (!input?.leagueId || !Number.isInteger(input.teamId)) throw new Error("Invalid team.");
+    return { leagueId: String(input.leagueId), teamId: input.teamId, name };
+  })
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    if (!data.name) {
+      await context.supabase.from("team_names").delete().eq("league_id", data.leagueId).eq("espn_team_id", data.teamId);
+      return { ok: true };
+    }
+    const { error } = await context.supabase
+      .from("team_names")
+      .upsert({ league_id: data.leagueId, espn_team_id: data.teamId, display_name: data.name });
+    if (error) return { ok: false, error: "Couldn't save that name." };
     return { ok: true };
   });

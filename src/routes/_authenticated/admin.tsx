@@ -11,12 +11,12 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export const Route = createFileRoute("/_authenticated/connect")({
+export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
-      { title: "League setup — The Poverty Franchise" },
+      { title: "Admin — The Poverty Franchise" },
       { name: "description", content: "Connect your ESPN account so league history can be pulled in." },
-      { property: "og:title", content: "League setup — The Poverty Franchise" },
+      { property: "og:title", content: "Admin — The Poverty Franchise" },
       { property: "og:description", content: "Connect your ESPN account to The Poverty Franchise." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
