@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { getLeagueHome, type MatchupRow } from "@/lib/league.functions";
 import { Card, CardContent } from "@/components/ui/card";
-import { Crown, TrendingUp, Flame, Trophy, BarChart3, Star, CalendarDays } from "lucide-react";
+import { Crown, TrendingUp, Flame, Trophy, BarChart3, Star, CalendarDays, ArrowLeftRight } from "lucide-react";
 
 const th = "px-3 py-2 text-left";
 const mKey = (n: string) => n.trim().toLowerCase().replace(/\s+/g, " ");
@@ -218,6 +218,30 @@ export function LeagueHome() {
           </div>
         </div>
       </section>
+
+      {data.moves.length > 0 && (
+        <section>
+          <h2 className="mb-4 flex items-center gap-2 text-4xl text-foreground"><ArrowLeftRight className="h-7 w-7 text-primary" /> Recent moves</h2>
+          <div className="divide-y divide-border rounded-md border border-border bg-card">
+            {data.moves.map((mv, i) => (
+              <div key={i} className="flex items-start justify-between gap-4 p-4">
+                <div className="min-w-0">
+                  <p className="text-sm">
+                    <span className={`mr-2 inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${mv.kind === "Trade" ? "bg-primary/20 text-primary" : mv.kind === "Waiver" ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"}`}>{mv.kind}</span>
+                    <span className="font-semibold text-foreground">{mv.players}</span>
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {mv.team}
+                    {mv.managers.length > 0 && <> · <ManagerNames names={mv.managers.join(" & ")} /></>}
+                    {mv.bid != null && mv.bid > 0 && ` · $${mv.bid} bid`}
+                  </p>
+                </div>
+                <span className="shrink-0 text-xs text-muted-foreground">{mv.date}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section>
         <h2 className="mb-4 flex items-center gap-2 text-4xl text-foreground"><Crown className="h-7 w-7 text-primary" /> More fun facts</h2>
