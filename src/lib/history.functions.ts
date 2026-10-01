@@ -8,7 +8,7 @@ type L = Awaited<ReturnType<typeof lib>>;
 
 export type Side = { teamId: number; team: string; managers: string; pts: number };
 export type Game = { season: number; week: number; playoff: boolean; home: Side; away: Side };
-export type RecordEntry = { value: string; who: string; team?: string; detail: string; season: number };
+export type RecordEntry = { value: string; who: string; team?: string | undefined; detail: string; season: number };
 export type RecordCat = { title: string; blurb: string; entries: RecordEntry[] };
 
 const done = (m: RawMatch) => m.winner === "HOME" || m.winner === "AWAY" || m.winner === "TIE";
@@ -104,7 +104,7 @@ export const getRecords = createServerFn({ method: "POST" })
   });
 
 /* ---------------- Awards ---------------- */
-export type Award = { title: string; emoji: string; who: string; team?: string; detail: string };
+export type Award = { title: string; emoji: string; who: string; team?: string | undefined; detail: string };
 
 export const getAwards = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

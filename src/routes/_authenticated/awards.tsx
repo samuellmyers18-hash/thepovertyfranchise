@@ -44,6 +44,7 @@ function AwardsPage() {
         <section className="mb-6 rounded-xl border border-primary bg-primary/10 p-8 text-center">
           <p className="text-6xl">{hero.emoji}</p>
           <p className="mt-2 text-sm uppercase tracking-[0.3em] text-primary">{hero.title}</p>
+          {hero.team && <p className="mt-2 text-xl text-muted-foreground">{hero.team}</p>}
           <ManagerNames names={hero.who} className="text-5xl text-foreground" />
           <p className="mt-1 text-muted-foreground">{hero.detail}</p>
         </section>
@@ -55,7 +56,8 @@ function AwardsPage() {
               <span className="text-3xl">{a.emoji}</span>
               <p className="text-xs uppercase tracking-[0.2em] text-primary">{a.title}</p>
             </div>
-            <ManagerNames names={a.who} className="mt-3 block text-2xl text-foreground" />
+            {a.team && <p className="mt-3 text-sm uppercase tracking-wider text-muted-foreground">{a.team}</p>}
+            <ManagerNames names={a.who} className="block text-2xl text-foreground" />
             <p className="text-sm text-muted-foreground">{a.detail}</p>
           </div>
         ))}
