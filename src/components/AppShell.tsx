@@ -30,7 +30,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const nav = (
     <nav className="flex h-full flex-col gap-1 p-4">
-      <Link to="/" className="mb-6 px-3 text-3xl leading-none text-primary">Poverty<br />Franchise</Link>
+      <Link to="/" className="mb-6 px-3 text-3xl leading-none text-primary">The Poverty<br />Franchise</Link>
       <Link to="/" className={item} activeProps={active} activeOptions={{ exact: true }}><Home className="h-4 w-4" />Home</Link>
       {userId && (
         <>
@@ -62,7 +62,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-background md:flex">
       <aside className="hidden w-60 shrink-0 border-r border-border bg-card md:block md:sticky md:top-0 md:h-screen">{nav}</aside>
       <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3 md:hidden">
-        <Link to="/" className="text-2xl text-primary">Poverty Franchise</Link>
+        <Link to="/" className="text-2xl text-primary">The Poverty Franchise</Link>
         <button aria-label="Open menu" onClick={() => setOpen(true)}><Menu className="h-6 w-6 text-foreground" /></button>
       </header>
       {open && (

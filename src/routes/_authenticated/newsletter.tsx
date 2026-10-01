@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { getNewsletter } from "@/lib/history.functions";
 import { ManagerNames, PredictionBox } from "@/components/LeagueHome";
+import { Flame } from "lucide-react";
 
 const DESC = "The Poverty Post: a weekly newspaper of recaps, headlines and standings from The Poverty Franchise.";
 export const Route = createFileRoute("/_authenticated/newsletter")({
@@ -98,6 +99,15 @@ function NewsletterPage() {
                 {iss.luckiest && <Box label="Stole one" who={iss.luckiest.who} team={iss.luckiest.team} text={`Won with only ${iss.luckiest.pts.toFixed(2)}.`} />}
               </aside>
             </section>
+
+            {iss.hotTake && (
+              <section className="border-b border-border py-6">
+                <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-accent"><Flame className="h-4 w-4" /> This week's hot take</p>
+                <h2 className="mt-2 text-4xl leading-none text-foreground">{iss.hotTake.headline}</h2>
+                <p className="mt-2 max-w-3xl text-base leading-relaxed text-muted-foreground">{iss.hotTake.body}</p>
+                <p className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">{iss.hotTake.team} · <ManagerNames names={iss.hotTake.managers} /></p>
+              </section>
+            )}
 
             <section className="border-b border-border py-6">
               <p className="mb-2 text-xs uppercase tracking-widest text-primary">From the editor's desk</p>

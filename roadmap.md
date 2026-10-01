@@ -16,3 +16,7 @@
 - [x] Fix visual bug on Poverty Post: Lee Jennings vs Samuel Myers story
 
 - [ ] Weekly newsletter email to all members — blocked: built-in email sending does not allow newsletters sent to a list; needs a separate mailing service
+- [ ] Weekly hot take on home + newsletter
+- [x] Weekly hot take on home + newsletter
+- [x] Sidebar: The Poverty Franchise
+- [x] Prediction confidence spread fix
