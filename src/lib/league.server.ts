@@ -42,6 +42,16 @@ export type RawSeason = {
   teams?: RawTeam[];
   schedule?: RawMatch[];
   draftDetail?: { picks?: Array<{ overallPickNumber?: number; roundId?: number; roundPickNumber?: number; teamId?: number; playerId?: number; keeper?: boolean }> };
+  transactions?: Array<{
+    id?: number;
+    type?: string; // WAIVER | FREEAGENT | TRADE | etc.
+    status?: string; // EXECUTED etc.
+    proposedDate?: number;
+    executionDate?: number;
+    teamId?: number;
+    bidAmount?: number;
+    items?: Array<{ type?: string; playerId?: number; fromTeamId?: number; toTeamId?: number }>;
+  }>;
 };
 
 export function managerKey(name: string) {
