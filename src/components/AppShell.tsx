@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Home, Users, User, Swords, ListOrdered, BadgeCheck, Settings, LogOut, LogIn, Menu, X } from "lucide-react";
+import { Home, Users, User, Swords, ListOrdered, BadgeCheck, Settings, LogOut, LogIn, Menu, X, ClipboardList } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -37,6 +37,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Link to="/managers" className={item} activeProps={active}><Users className="h-4 w-4" />Managers</Link>
           <Link to="/rivalries" className={item} activeProps={active}><Swords className="h-4 w-4" />Rivalries</Link>
           <Link to="/drafts" className={item} activeProps={active}><ListOrdered className="h-4 w-4" />Draft recaps</Link>
+          <Link to="/rosters" className={item} activeProps={active}><ClipboardList className="h-4 w-4" />Rosters</Link>
           <Link to="/profile" className={item} activeProps={active}><User className="h-4 w-4" />My profile</Link>
           <Link to="/claim" className={item} activeProps={active}><BadgeCheck className="h-4 w-4" />Claim manager</Link>
           {isAdmin && <Link to="/admin" className={item} activeProps={active}><Settings className="h-4 w-4" />Admin settings</Link>}
