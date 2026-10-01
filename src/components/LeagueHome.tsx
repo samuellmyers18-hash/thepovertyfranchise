@@ -23,27 +23,34 @@ export function ManagerNames({ names, className }: { names: string; className?: 
   );
 }
 
-function MatchupCard({ m, big }: { m: MatchupRow; big?: boolean }) {
+export function MatchupCard({ m, big }: { m: MatchupRow; big?: boolean }) {
+  const played = m.homePts + m.awayPts > 0;
   const homeWon = m.homePts > m.awayPts;
   const tied = m.homePts === m.awayPts;
   return (
     <div className={`rounded-md border bg-card ${big ? "border-primary/50 p-6" : "border-border p-4"}`}>
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className={`truncate font-semibold ${homeWon && !tied ? "text-primary" : "text-foreground"} ${big ? "text-xl" : ""}`}>{m.homeTeam}</p>
+          <p className={`truncate font-semibold ${played && homeWon && !tied ? "text-primary" : "text-foreground"} ${big ? "text-xl" : ""}`}>{m.homeTeam}</p>
           <ManagerNames names={m.homeManagers.join(" & ")} className="text-xs text-muted-foreground" />
         </div>
-        <p className={`${big ? "text-4xl" : "text-2xl"} font-black ${homeWon && !tied ? "text-primary" : "text-foreground"}`}>{m.homePts.toFixed(1)}</p>
+        <div className="text-right">
+          <p className={`${big ? "text-4xl" : "text-2xl"} font-black ${played && homeWon && !tied ? "text-primary" : "text-foreground"}`}>{m.homePts.toFixed(1)}</p>
+          {m.homeProj != null && <p className="text-[10px] uppercase tracking-wide text-muted-foreground">proj {m.homeProj.toFixed(1)}</p>}
+        </div>
       </div>
       <div className="my-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
         <span className="h-px flex-1 bg-border" />vs<span className="h-px flex-1 bg-border" />
       </div>
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className={`truncate font-semibold ${!homeWon && !tied ? "text-primary" : "text-foreground"} ${big ? "text-xl" : ""}`}>{m.awayTeam}</p>
+          <p className={`truncate font-semibold ${played && !homeWon && !tied ? "text-primary" : "text-foreground"} ${big ? "text-xl" : ""}`}>{m.awayTeam}</p>
           <ManagerNames names={m.awayManagers.join(" & ")} className="text-xs text-muted-foreground" />
         </div>
-        <p className={`${big ? "text-4xl" : "text-2xl"} font-black ${!homeWon && !tied ? "text-primary" : "text-foreground"}`}>{m.awayPts.toFixed(1)}</p>
+        <div className="text-right">
+          <p className={`${big ? "text-4xl" : "text-2xl"} font-black ${played && !homeWon && !tied ? "text-primary" : "text-foreground"}`}>{m.awayPts.toFixed(1)}</p>
+          {m.awayProj != null && <p className="text-[10px] uppercase tracking-wide text-muted-foreground">proj {m.awayProj.toFixed(1)}</p>}
+        </div>
       </div>
     </div>
   );
@@ -120,7 +127,7 @@ export function LeagueHome() {
         </p>
         <div className="overflow-x-auto rounded-md border border-border">
           <table className="w-full text-sm">
-            <thead className="bg-secondary text-muted-foreground"><tr>{["#", "Team", "Score", "Record", "All-play", "Last 3 avg", ""].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
+            <thead className="bg-secondary text-muted-foreground"><tr>{["#", "Team", "Score", "Record", "All-play", "Last 3 avg", "Proj", ""].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
             <tbody>
               {data.power.map((p) => (
                 <tr key={p.teamId} className="border-t border-border">
@@ -137,6 +144,7 @@ export function LeagueHome() {
                   <td className="px-3 py-2">{p.wins}-{p.losses}{p.ties ? `-${p.ties}` : ""}</td>
                   <td className="px-3 py-2">{p.allPlay}</td>
                   <td className="px-3 py-2">{p.recentAvg.toFixed(1)}</td>
+                  <td className="px-3 py-2">{p.proj > 0 ? p.proj.toFixed(1) : "—"}</td>
                   <td className="px-3 py-2 text-xs text-primary">{p.note}</td>
                 </tr>
               ))}

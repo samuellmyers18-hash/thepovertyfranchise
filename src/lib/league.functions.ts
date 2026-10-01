@@ -124,12 +124,12 @@ export const releaseManager = createServerFn({ method: "POST" })
 // ---------- Home: standings, power rankings, fun facts ----------
 
 export type StandingRow = { teamId: number; team: string; managers: string; wins: number; losses: number; ties: number; pf: number; pa: number; streak: string };
-export type PowerRow = StandingRow & { rank: number; score: number; allPlay: string; recentAvg: number; note: string };
+export type PowerRow = StandingRow & { rank: number; score: number; allPlay: string; recentAvg: number; proj: number; note: string };
 export type FunFact = { title: string; value: string; detail: string };
 export type WeekPoint = { week: number; avg: number; high: number; highWho: string };
 export type TopScore = { who: string; pts: number; season: number; week: number };
 export type PointsLeader = { name: string; pts: number; seasons: number };
-export type MatchupRow = { homeTeam: string; awayTeam: string; homeManagers: string[]; awayManagers: string[]; homePts: number; awayPts: number };
+export type MatchupRow = { homeTeam: string; awayTeam: string; homeManagers: string[]; awayManagers: string[]; homePts: number; awayPts: number; homeProj?: number | null; awayProj?: number | null };
 export type MoveRow = { kind: "Waiver" | "Free agent" | "Trade"; date: string; team: string; managers: string[]; players: string; bid: number | null };
 
 export const getLeagueHome = createServerFn({ method: "POST" })
@@ -171,8 +171,16 @@ export const getLeagueHome = createServerFn({ method: "POST" })
       })
       .sort((a, b) => b.wins - a.wins || b.pf - a.pf);
 
-    // Power score: 40% all-play win rate, 30% actual win rate, 30% last-3-week scoring vs league best.
+    // Power score: 30% all-play win rate, 25% actual win rate, 25% last-3-week scoring, 20% current roster projection.
     const recentWeeks = weeks.slice(-3);
+    const projByTeam = new Map<number, number>();
+    const curWeekNum = cur.status?.currentMatchupPeriod ?? lastWeek;
+    for (const g of cur.schedule ?? []) {
+      if (g.matchupPeriodId !== curWeekNum) continue;
+      if (g.home?.teamId != null && g.home.totalProjectedPointsLive != null) projByTeam.set(g.home.teamId, g.home.totalProjectedPointsLive);
+      if (g.away?.teamId != null && g.away.totalProjectedPointsLive != null) projByTeam.set(g.away.teamId, g.away.totalProjectedPointsLive);
+    }
+    const maxProj = Math.max(1, ...projByTeam.values());
     const raw = standings.map((s) => {
       let apW = 0, apG = 0;
       for (const w of weeks) {
@@ -189,10 +197,12 @@ export const getLeagueHome = createServerFn({ method: "POST" })
     const maxRecent = Math.max(1, ...raw.map((r) => r.recentAvg));
     const power: PowerRow[] = raw
       .map((r) => {
-        const score = 0.4 * r.apRate + 0.3 * r.winRate + 0.3 * (r.recentAvg / maxRecent);
+        const proj = projByTeam.get(r.s.teamId) ?? 0;
+        const projRate = proj / maxProj;
+        const score = 0.3 * r.apRate + 0.25 * r.winRate + 0.25 * (r.recentAvg / maxRecent) + 0.2 * projRate;
         const luck = r.winRate - r.apRate;
-        const note = luck > 0.12 ? "Riding some luck" : luck < -0.12 ? "Better than the record" : r.recentAvg === maxRecent ? "Hottest offense" : "";
-        return { ...r.s, rank: 0, score: Math.round(score * 1000) / 10, allPlay: `${Math.round(r.apW)}-${Math.round(r.apL)}`, recentAvg: r2(r.recentAvg), note };
+        const note = proj === maxProj && proj > 0 ? "Best roster this week" : luck > 0.12 ? "Riding some luck" : luck < -0.12 ? "Better than the record" : r.recentAvg === maxRecent ? "Hottest offense" : "";
+        return { ...r.s, rank: 0, score: Math.round(score * 1000) / 10, allPlay: `${Math.round(r.apW)}-${Math.round(r.apL)}`, recentAvg: r2(r.recentAvg), proj: r2(proj), note };
       })
       .sort((a, b) => b.score - a.score)
       .map((p, i) => ({ ...p, rank: i + 1 }));
@@ -256,7 +266,8 @@ export const getLeagueHome = createServerFn({ method: "POST" })
       .sort((a, b) => b.pts - a.pts)
       .slice(0, 5);
 
-    // This week's matchups; featured = highest combined score.
+    // Current week's matchups (live or upcoming); featured = highest combined score/projection.
+    const currentWeek = cur.status?.currentMatchupPeriod ?? lastWeek;
     const matchups: MatchupRow[] = [];
     for (const g of games) {
       if (g.home?.teamId == null || g.away?.teamId == null) continue;
@@ -264,15 +275,20 @@ export const getLeagueHome = createServerFn({ method: "POST" })
       const at = teams.find((t) => t.id === g.away!.teamId);
       if (!ht || !at) continue;
       for (const wk of L.matchWeeks(g)) {
-        if (wk.period !== lastWeek) continue;
+        if (wk.period !== currentWeek) continue;
         matchups.push({
           homeTeam: label(ht).team, awayTeam: label(at).team,
           homeManagers: L.teamManagers(cur, ht), awayManagers: L.teamManagers(cur, at),
           homePts: r2(wk.homePts), awayPts: r2(wk.awayPts),
+          homeProj: g.home!.totalProjectedPointsLive != null ? r2(g.home!.totalProjectedPointsLive) : null,
+          awayProj: g.away!.totalProjectedPointsLive != null ? r2(g.away!.totalProjectedPointsLive) : null,
         });
       }
     }
-    const featured = matchups.reduce<MatchupRow | null>((b, m) => (b === null || m.homePts + m.awayPts > b.homePts + b.awayPts ? m : b), null);
+    const featured = matchups.reduce<MatchupRow | null>((b, m) => {
+      const score = (x: MatchupRow) => (x.homePts + x.awayPts > 0 ? x.homePts + x.awayPts : (x.homeProj ?? 0) + (x.awayProj ?? 0));
+      return b === null || score(m) > score(b) ? m : b;
+    }, null);
 
     // Recent roster moves (waivers, free agents, trades) from the current season.
     const txns = (cur.transactions ?? [])
@@ -313,7 +329,7 @@ export const getLeagueHome = createServerFn({ method: "POST" })
         return { kind: t.type === "WAIVER" ? ("Waiver" as const) : ("Free agent" as const), date, team: who.team, managers: who.managers, players: parts, bid: t.type === "WAIVER" ? (t.bidAmount ?? null) : null };
       });
 
-    return { error, season: cur.seasonId ?? null, week: lastWeek, standings, power, facts, trend, topScores, pointsLeaders, matchups, featured, moves };
+    return { error, season: cur.seasonId ?? null, week: currentWeek, standings, power, facts, trend, topScores, pointsLeaders, matchups, featured, moves };
   });
 
 // ---------- Rivalries ----------
@@ -398,6 +414,98 @@ export const getDraft = createServerFn({ method: "POST" })
       })
       .sort((a, b) => a.overall - b.overall);
     return { error, years, season: s.seasonId ?? null, picks };
+  });
+
+// ---------- Rosters ----------
+
+const SLOT_LABELS: Record<number, string> = {
+  0: "QB", 1: "TQB", 2: "RB", 3: "RB/WR", 4: "WR", 5: "WR/TE", 6: "TE", 7: "OP",
+  8: "DT", 9: "DE", 10: "LB", 11: "DL", 12: "CB", 13: "S", 14: "DB", 15: "DP",
+  16: "D/ST", 17: "K", 18: "P", 19: "HC", 20: "Bench", 21: "IR", 23: "FLEX", 24: "EDR", 25: "RB",
+};
+const slotLabel = (id?: number) => SLOT_LABELS[id ?? -1] ?? `Slot ${id ?? "?"}`;
+
+export type RosterPlayer = { name: string; slot: string; acquired: string | null };
+export type RosterTeam = { teamId: number; team: string; managers: string[]; players: RosterPlayer[] };
+
+export const getRosters = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { season?: number | undefined; week?: number | undefined }) => ({
+    season: Number.isInteger(input?.season) ? input.season : undefined,
+    week: Number.isInteger(input?.week) ? input.week : undefined,
+  }))
+  .handler(async ({ data }) => {
+    const L = await lib();
+    const { seasons, error } = await L.loadAllSeasons();
+    const years = seasons.map((s) => s.seasonId ?? 0);
+    const s = seasons.find((x) => x.seasonId === data.season) ?? seasons[0];
+    if (!s) return { error: error ?? "No data yet.", years, season: null, week: 0, weeks: [] as number[], teams: [] as RosterTeam[] };
+    const periodCount = s.settings?.scheduleSettings?.matchupPeriodCount ?? 17;
+    const latest = Math.min(s.status?.latestScoringPeriod ?? periodCount, periodCount) || 1;
+    const week = data.week && data.week >= 1 && data.week <= periodCount ? data.week : latest;
+    const raw = await L.fetchRosterWeek(s.seasonId ?? 0, week);
+    if (!raw) return { error: "Couldn't load rosters from ESPN for that week.", years, season: s.seasonId ?? null, week, weeks: Array.from({ length: periodCount }, (_, i) => i + 1), teams: [] as RosterTeam[] };
+    const ids = [...new Set(raw.flatMap((t) => (t.roster?.entries ?? []).map((e) => e.playerId ?? 0)).filter(Boolean))];
+    const names = await L.loadPlayerNames(s.seasonId ?? 0, ids);
+    const byId = new Map((s.teams ?? []).map((t) => [t.id, t]));
+    const teams: RosterTeam[] = raw
+      .map((rt) => {
+        const t = byId.get(rt.id);
+        const players: RosterPlayer[] = (rt.roster?.entries ?? [])
+          .map((e) => ({
+            name: names[e.playerId ?? 0] ?? `Player #${e.playerId}`,
+            slot: slotLabel(e.lineupSlotId),
+            acquired: e.acquisitionDate ? new Date(e.acquisitionDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : null,
+          }))
+          .sort((a, b) => slotOrderFromLabel(a.slot) - slotOrderFromLabel(b.slot));
+        return { teamId: rt.id ?? 0, team: t ? L.teamName(t) : `Team ${rt.id}`, managers: t ? L.teamManagers(s, t) : [], players };
+      })
+      .sort((a, b) => a.team.localeCompare(b.team));
+    return { error, years, season: s.seasonId ?? null, week, weeks: Array.from({ length: periodCount }, (_, i) => i + 1), teams };
+  });
+
+function slotOrderFromLabel(slot: string) {
+  if (slot === "Bench") return 50;
+  if (slot === "IR") return 60;
+  return 0;
+}
+
+// ---------- Matchups by week ----------
+
+export const getMatchups = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { season?: number | undefined; week?: number | undefined }) => ({
+    season: Number.isInteger(input?.season) ? input.season : undefined,
+    week: Number.isInteger(input?.week) ? input.week : undefined,
+  }))
+  .handler(async ({ data }) => {
+    const L = await lib();
+    const { seasons, error } = await L.loadAllSeasons();
+    const years = seasons.map((s) => s.seasonId ?? 0);
+    const s = seasons.find((x) => x.seasonId === data.season) ?? seasons[0];
+    if (!s) return { error: error ?? "No data yet.", years, season: null, week: 0, weeks: [] as number[], matchups: [] as MatchupRow[] };
+    const periodCount = s.settings?.scheduleSettings?.matchupPeriodCount ?? 17;
+    const latest = Math.min(s.status?.latestScoringPeriod ?? periodCount, periodCount) || 1;
+    const week = data.week && data.week >= 1 && data.week <= periodCount ? data.week : latest;
+    const teams = s.teams ?? [];
+    const matchups: MatchupRow[] = [];
+    for (const g of s.schedule ?? []) {
+      if (g.home?.teamId == null || g.away?.teamId == null) continue;
+      const ht = teams.find((t) => t.id === g.home!.teamId);
+      const at = teams.find((t) => t.id === g.away!.teamId);
+      if (!ht || !at) continue;
+      for (const wk of L.matchWeeks(g)) {
+        if (wk.period !== week) continue;
+        matchups.push({
+          homeTeam: L.teamName(ht), awayTeam: L.teamName(at),
+          homeManagers: L.teamManagers(s, ht), awayManagers: L.teamManagers(s, at),
+          homePts: r2(wk.homePts), awayPts: r2(wk.awayPts),
+          homeProj: g.home!.totalProjectedPointsLive != null ? r2(g.home!.totalProjectedPointsLive) : null,
+          awayProj: g.away!.totalProjectedPointsLive != null ? r2(g.away!.totalProjectedPointsLive) : null,
+        });
+      }
+    }
+    return { error, years, season: s.seasonId ?? null, week, weeks: Array.from({ length: periodCount }, (_, i) => i + 1), matchups };
   });
 
 // ---------- Single manager profile ----------

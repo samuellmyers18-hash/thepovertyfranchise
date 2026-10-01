@@ -15,8 +15,8 @@ export type RawMatch = {
   matchupPeriodId?: number;
   playoffTierType?: string;
   winner?: string;
-  home?: { teamId?: number; totalPoints?: number; cumulativeScore?: { scoreByScoringPeriod?: Record<string, number> } };
-  away?: { teamId?: number; totalPoints?: number; cumulativeScore?: { scoreByScoringPeriod?: Record<string, number> } };
+  home?: { teamId?: number; totalPoints?: number; totalProjectedPointsLive?: number; pointsByScoringPeriod?: Record<string, number>; cumulativeScore?: { scoreByScoringPeriod?: Record<string, number> } };
+  away?: { teamId?: number; totalPoints?: number; totalProjectedPointsLive?: number; pointsByScoringPeriod?: Record<string, number>; cumulativeScore?: { scoreByScoringPeriod?: Record<string, number> } };
 };
 
 /**
@@ -25,8 +25,8 @@ export type RawMatch = {
  * Falls back to the matchup total when the breakdown is missing.
  */
 export function matchWeeks(m: RawMatch): Array<{ period: number; homePts: number; awayPts: number }> {
-  const hp = m.home?.cumulativeScore?.scoreByScoringPeriod;
-  const ap = m.away?.cumulativeScore?.scoreByScoringPeriod;
+  const hp = m.home?.pointsByScoringPeriod ?? m.home?.cumulativeScore?.scoreByScoringPeriod;
+  const ap = m.away?.pointsByScoringPeriod ?? m.away?.cumulativeScore?.scoreByScoringPeriod;
   const periods = [...new Set([...Object.keys(hp ?? {}), ...Object.keys(ap ?? {})])]
     .map(Number)
     .filter((n) => Number.isFinite(n))
@@ -99,6 +99,29 @@ async function fetchSeason(leagueId: string, year: number, cookie: string): Prom
     }
   } catch (e) {
     console.error("espn season fetch", year, e);
+  }
+  return null;
+}
+
+export type RawRosterEntry = { playerId?: number; lineupSlotId?: number; acquisitionDate?: number; acquisitionType?: string };
+export type RawRosterTeam = { id?: number; roster?: { entries?: RawRosterEntry[] } };
+
+/** Fetches every team's roster for one scoring period (week) of a season. */
+export async function fetchRosterWeek(year: number, week: number): Promise<RawRosterTeam[] | null> {
+  const conn = await getConn();
+  if (!conn?.league_id) return null;
+  const headers = { accept: "application/json", cookie: `SWID=${conn.swid}; espn_s2=${conn.espn_s2}`, "user-agent": "Mozilla/5.0" };
+  const q = `view=mRoster&scoringPeriodId=${week}`;
+  try {
+    const r = await fetch(`${BASE}/seasons/${year}/segments/0/leagues/${conn.league_id}?${q}`, { headers });
+    if (r.ok) return ((await r.json()) as { teams?: RawRosterTeam[] }).teams ?? [];
+    const h = await fetch(`${BASE}/leagueHistory/${conn.league_id}?seasonId=${year}&${q}`, { headers });
+    if (h.ok) {
+      const arr = (await h.json()) as Array<{ teams?: RawRosterTeam[] }>;
+      return (Array.isArray(arr) ? arr[0]?.teams : null) ?? [];
+    }
+  } catch (e) {
+    console.error("espn roster fetch", year, week, e);
   }
   return null;
 }
