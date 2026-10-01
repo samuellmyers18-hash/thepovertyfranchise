@@ -15,113 +15,126 @@ export type EspnConnectionStatus = {
   leagues: EspnLeagueSummary[];
 };
 
-const FAN_BASE = "https://fan.api.espn.com/apis/v2/services/fan";
+const LEAGUE_BASE = "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl";
 
 function normalizeSwid(raw: string): string {
   const trimmed = raw.trim().replace(/^SWID=/i, "").trim();
-  return trimmed.startsWith("{") ? trimmed : `{${trimmed.replace(/^\{|\}$/g, "")}}`;
+  return `{${trimmed.replace(/^\{|\}$/g, "")}}`;
 }
 
 function normalizeS2(raw: string): string {
-  return raw.trim().replace(/^espn_s2=/i, "").trim();
+  let v = raw.trim().replace(/^espn_s2=/i, "").trim();
+  // Chrome sometimes shows the cookie URL-encoded; ESPN accepts either, but avoid double-encoding.
+  try {
+    if (/%[0-9A-F]{2}/i.test(v)) v = decodeURIComponent(v);
+  } catch {
+    /* keep raw */
+  }
+  return v;
 }
 
-type FanPreference = {
-  id?: string;
-  typeId?: number;
-  metaData?: {
-    entry?: {
-      entryId?: number | string;
-      entryMetadata?: { teamName?: string };
-      name?: string;
-      groups?: Array<{ groupId?: number | string; groupName?: string }>;
-      seasonId?: number;
-      gameId?: string;
-      abbrev?: string;
-    };
-  };
+function normalizeLeagueId(raw: string): string {
+  const m = raw.match(/leagueId=(\d+)/i) ?? raw.match(/(\d{3,})/);
+  return m?.[1] ?? raw.trim();
+}
+
+type LeagueJson = {
+  id?: number;
+  seasonId?: number;
+  settings?: { name?: string };
+  status?: { previousSeasons?: number[] };
+  members?: Array<{ id?: string; displayName?: string; firstName?: string; lastName?: string }>;
+  teams?: Array<{ id?: number; name?: string; location?: string; nickname?: string; owners?: string[] }>;
 };
 
-/**
- * Reads the ESPN fan profile for the given SWID. Returns the display name and
- * every fantasy football league/team the account is a member of.
- */
-async function fetchEspnProfile(swid: string, espnS2: string) {
-  const url = `${FAN_BASE}/${encodeURIComponent(swid)}?displayEvents=true&displayNow=true&displayRecs=true&context=fantasy&featureFlags=challengeEntries&platform=web&source=ESPN.com+-+FAM&lang=en`;
+async function fetchLeague(leagueId: string, swid: string, espnS2: string) {
+  const season = new Date().getUTCMonth() >= 6 ? new Date().getUTCFullYear() : new Date().getUTCFullYear() - 1;
+  const headers = {
+    accept: "application/json",
+    "user-agent":
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36",
+    cookie: `SWID=${swid}; espn_s2=${espnS2}`,
+  };
 
-  const res = await fetch(url, {
-    headers: {
-      accept: "application/json",
-      "user-agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36",
-      cookie: `SWID=${swid}; espn_s2=${espnS2}`,
-    },
-  });
+  let res: Response | null = null;
+  for (const year of [season, season - 1]) {
+    res = await fetch(`${LEAGUE_BASE}/seasons/${year}/segments/0/leagues/${leagueId}?view=mSettings&view=mTeam`, {
+      headers,
+    });
+    if (res.status !== 404) break;
+  }
+  if (!res) return { ok: false as const, error: "Couldn't reach ESPN." };
 
   if (res.status === 401 || res.status === 403) {
-    return { ok: false as const, error: "ESPN rejected those values. Copy them again from your browser." };
+    return {
+      ok: false as const,
+      error: "ESPN said no access. Copy SWID and espn_s2 again while logged in, and check the league ID.",
+    };
+  }
+  if (res.status === 404) {
+    return { ok: false as const, error: "ESPN couldn't find that league ID. Double-check the number." };
   }
   if (!res.ok) {
+    console.error("ESPN league fetch failed", res.status);
     return { ok: false as const, error: `ESPN returned an error (${res.status}). Try again in a moment.` };
   }
 
-  const json = (await res.json()) as {
-    displayName?: string;
-    firstName?: string;
-    preferences?: FanPreference[];
-  };
+  const json = (await res.json()) as LeagueJson;
+  const me = json.members?.find((m) => m.id?.toUpperCase() === swid.toUpperCase());
+  const myTeam = json.teams?.find((t) => t.owners?.some((o) => o.toUpperCase() === swid.toUpperCase()));
+  const teamName = myTeam ? (myTeam.name ?? `${myTeam.location ?? ""} ${myTeam.nickname ?? ""}`.trim()) : null;
 
-  const leagues: EspnLeagueSummary[] = [];
-  for (const pref of json.preferences ?? []) {
-    const entry = pref.metaData?.entry;
-    if (!entry) continue;
-    const group = entry.groups?.[0];
-    if (!group?.groupId) continue;
-    if (entry.gameId && entry.gameId !== "1" && entry.gameId !== "ffl") continue;
-    leagues.push({
-      leagueId: String(group.groupId),
-      seasonId: entry.seasonId ?? 0,
-      leagueName: group.groupName ?? "Unnamed league",
-      teamName: entry.entryMetadata?.teamName ?? entry.name ?? null,
-    });
-  }
+  const league: EspnLeagueSummary = {
+    leagueId,
+    seasonId: json.seasonId ?? season,
+    leagueName: json.settings?.name ?? "Your league",
+    teamName: teamName || null,
+  };
 
   return {
     ok: true as const,
-    displayName: json.displayName ?? json.firstName ?? null,
-    leagues,
+    displayName: me ? (me.displayName ?? [me.firstName, me.lastName].filter(Boolean).join(" ")) : null,
+    leagues: [league],
   };
 }
 
 export const connectEspn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { swid: string; espnS2: string }) => {
-    if (!input?.swid?.trim() || !input?.espnS2?.trim()) {
-      throw new Error("Both ESPN values are required.");
+  .inputValidator((input: { swid: string; espnS2: string; leagueId: string }) => {
+    if (!input?.swid?.trim() || !input?.espnS2?.trim() || !input?.leagueId?.trim()) {
+      throw new Error("League ID, SWID and espn_s2 are all required.");
     }
-    return { swid: normalizeSwid(input.swid), espnS2: normalizeS2(input.espnS2) };
+    return {
+      swid: normalizeSwid(input.swid),
+      espnS2: normalizeS2(input.espnS2),
+      leagueId: normalizeLeagueId(input.leagueId),
+    };
   })
   .handler(async ({ data, context }): Promise<{ ok: boolean; error?: string; status?: EspnConnectionStatus }> => {
-    const profile = await fetchEspnProfile(data.swid, data.espnS2);
-    if (!profile.ok) return { ok: false, error: profile.error };
+    const result = await fetchLeague(data.leagueId, data.swid, data.espnS2);
+    if (!result.ok) return { ok: false, error: result.error };
 
     const verifiedAt = new Date().toISOString();
     const { error } = await context.supabase.from("espn_connections").upsert({
       user_id: context.userId,
       swid: data.swid,
       espn_s2: data.espnS2,
-      espn_display_name: profile.displayName,
+      league_id: data.leagueId,
+      espn_display_name: result.displayName,
       last_verified_at: verifiedAt,
     });
-    if (error) return { ok: false, error: "Could not save your ESPN connection. Please try again." };
+    if (error) {
+      console.error("save espn connection", error);
+      return { ok: false, error: "Could not save your ESPN connection. Please try again." };
+    }
 
     return {
       ok: true,
       status: {
         connected: true,
-        espnDisplayName: profile.displayName,
+        espnDisplayName: result.displayName,
         lastVerifiedAt: verifiedAt,
-        leagues: profile.leagues,
+        leagues: result.leagues,
       },
     };
   });
@@ -131,20 +144,20 @@ export const getEspnStatus = createServerFn({ method: "POST" })
   .handler(async ({ context }): Promise<EspnConnectionStatus> => {
     const { data } = await context.supabase
       .from("espn_connections")
-      .select("swid, espn_s2, espn_display_name, last_verified_at")
+      .select("swid, espn_s2, league_id, espn_display_name, last_verified_at")
       .eq("user_id", context.userId)
       .maybeSingle();
 
-    if (!data) {
+    if (!data || !data.league_id) {
       return { connected: false, espnDisplayName: null, lastVerifiedAt: null, leagues: [] };
     }
 
-    const profile = await fetchEspnProfile(data.swid, data.espn_s2);
+    const result = await fetchLeague(data.league_id, data.swid, data.espn_s2);
     return {
       connected: true,
-      espnDisplayName: profile.ok ? (profile.displayName ?? data.espn_display_name) : data.espn_display_name,
+      espnDisplayName: result.ok ? (result.displayName ?? data.espn_display_name) : data.espn_display_name,
       lastVerifiedAt: data.last_verified_at,
-      leagues: profile.ok ? profile.leagues : [],
+      leagues: result.ok ? result.leagues : [],
     };
   });
 

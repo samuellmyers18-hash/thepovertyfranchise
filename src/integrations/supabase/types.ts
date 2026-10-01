@@ -20,6 +20,7 @@ export type Database = {
           espn_display_name: string | null
           espn_s2: string
           last_verified_at: string | null
+          league_id: string | null
           swid: string
           updated_at: string
           user_id: string
@@ -29,6 +30,7 @@ export type Database = {
           espn_display_name?: string | null
           espn_s2: string
           last_verified_at?: string | null
+          league_id?: string | null
           swid: string
           updated_at?: string
           user_id: string
@@ -38,6 +40,7 @@ export type Database = {
           espn_display_name?: string | null
           espn_s2?: string
           last_verified_at?: string | null
+          league_id?: string | null
           swid?: string
           updated_at?: string
           user_id?: string
