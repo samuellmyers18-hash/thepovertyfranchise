@@ -171,8 +171,16 @@ export const getLeagueHome = createServerFn({ method: "POST" })
       })
       .sort((a, b) => b.wins - a.wins || b.pf - a.pf);
 
-    // Power score: 40% all-play win rate, 30% actual win rate, 30% last-3-week scoring vs league best.
+    // Power score: 30% all-play win rate, 25% actual win rate, 25% last-3-week scoring, 20% current roster projection.
     const recentWeeks = weeks.slice(-3);
+    const projByTeam = new Map<number, number>();
+    const curWeekNum = cur.status?.currentMatchupPeriod ?? lastWeek;
+    for (const g of cur.schedule ?? []) {
+      if (g.matchupPeriodId !== curWeekNum) continue;
+      if (g.home?.teamId != null && g.home.totalProjectedPointsLive != null) projByTeam.set(g.home.teamId, g.home.totalProjectedPointsLive);
+      if (g.away?.teamId != null && g.away.totalProjectedPointsLive != null) projByTeam.set(g.away.teamId, g.away.totalProjectedPointsLive);
+    }
+    const maxProj = Math.max(1, ...projByTeam.values());
     const raw = standings.map((s) => {
       let apW = 0, apG = 0;
       for (const w of weeks) {
