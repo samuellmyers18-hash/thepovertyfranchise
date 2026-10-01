@@ -108,7 +108,7 @@ export type Award = { title: string; emoji: string; who: string; detail: string 
 
 export const getAwards = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: { season?: number }) => ({ season: Number.isInteger(i?.season) ? i.season : undefined }))
+  .inputValidator((i: { season?: number | undefined }) => ({ season: Number.isInteger(i?.season) ? i.season : undefined }))
   .handler(async ({ data }) => {
     const L = await lib();
     const { seasons, error } = await L.loadAllSeasons();
@@ -201,7 +201,7 @@ function recap(g: Game, avg: number, seed: number): Story {
 
 export const getNewsletter = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: { season?: number; week?: number }) => ({
+  .inputValidator((i: { season?: number | undefined; week?: number | undefined }) => ({
     season: Number.isInteger(i?.season) ? i.season : undefined,
     week: Number.isInteger(i?.week) ? i.week : undefined,
   }))
