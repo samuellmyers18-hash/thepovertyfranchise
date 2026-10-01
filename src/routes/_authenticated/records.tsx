@@ -53,6 +53,7 @@ function RecordsPage() {
               <p className="mb-4 text-xs text-muted-foreground">{c.blurb}</p>
               <div className="mb-3 rounded-md bg-primary/10 p-3">
                 <p className="text-4xl text-primary">{first!.value}</p>
+                {first!.team && <p className="text-xs uppercase tracking-wider text-primary">{first!.team}</p>}
                 <ManagerNames names={first!.who} className="font-semibold text-foreground" />
                 <p className="text-xs text-muted-foreground">{first!.detail}</p>
               </div>
@@ -61,6 +62,7 @@ function RecordsPage() {
                   <li key={i} className="flex gap-3 border-t border-border/50 pt-2">
                     <span className="w-5 text-muted-foreground">{i + 2}</span>
                     <div className="flex-1">
+                      {e.team && <p className="text-[11px] uppercase tracking-wider text-primary">{e.team}</p>}
                       <ManagerNames names={e.who} className="text-foreground" />
                       <p className="text-xs text-muted-foreground">{e.detail}</p>
                     </div>

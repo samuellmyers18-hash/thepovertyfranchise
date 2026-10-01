@@ -8,7 +8,7 @@ type L = Awaited<ReturnType<typeof lib>>;
 
 export type Side = { teamId: number; team: string; managers: string; pts: number };
 export type Game = { season: number; week: number; playoff: boolean; home: Side; away: Side };
-export type RecordEntry = { value: string; who: string; team?: string; detail: string; season: number };
+export type RecordEntry = { value: string; who: string; team?: string | undefined; detail: string; season: number };
 export type RecordCat = { title: string; blurb: string; entries: RecordEntry[] };
 
 const done = (m: RawMatch) => m.winner === "HOME" || m.winner === "AWAY" || m.winner === "TIE";
@@ -104,7 +104,7 @@ export const getRecords = createServerFn({ method: "POST" })
   });
 
 /* ---------------- Awards ---------------- */
-export type Award = { title: string; emoji: string; who: string; team?: string; detail: string };
+export type Award = { title: string; emoji: string; who: string; team?: string | undefined; detail: string };
 
 export const getAwards = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -241,18 +241,91 @@ export const getNewsletter = createServerFn({ method: "POST" })
     const unluckiest = [...scores].filter((x) => x.s.pts < x.o.pts).sort((a, b) => b.s.pts - a.s.pts)[0];
     const luckiest = [...scores].filter((x) => x.s.pts > x.o.pts).sort((a, b) => a.s.pts - b.s.pts)[0];
     const moves = (s.transactions ?? []).filter((t) => t.status === "EXECUTED").length;
+    const allGames = seasons.flatMap((x) => games(L, x));
+    const h2h = (a: string, b: string) => {
+      let aw = 0, bw = 0;
+      for (const g of allGames) {
+        if (g.season > (s.seasonId ?? 0) || (g.season === s.seasonId && g.week > week)) continue;
+        const [w, l] = winLose(g);
+        if (w.managers === a && l.managers === b) aw++;
+        else if (w.managers === b && l.managers === a) bw++;
+      }
+      return { aw, bw };
+    };
+    const scoreboard = wk.map((g) => ({ home: g.home, away: g.away, ...h2h(g.home.managers, g.away.managers) }));
+    // all-play this week
+    const allPlay = sorted.map((x, i) => ({ team: x.s.team, managers: x.s.managers, pts: x.s.pts, w: sorted.length - 1 - i, l: i }));
+    // streaks through this week
+    const seasonGames = gs.filter((g) => g.week <= week).sort((a, b) => a.week - b.week);
+    const streakMap = new Map<number, { team: string; managers: string; type: string; n: number }>();
+    for (const g of seasonGames) {
+      const [w, l] = winLose(g);
+      for (const [x, t] of [[w, "W"], [l, "L"]] as const) {
+        const c = streakMap.get(x.teamId);
+        streakMap.set(x.teamId, c && c.type === t ? { ...c, n: c.n + 1 } : { team: x.team, managers: x.managers, type: t, n: 1 });
+      }
+    }
+    const streaks = [...streakMap.values()].filter((x) => x.n >= 2).sort((a, b) => b.n - a.n);
+    // season leaders through this week
+    const pfBy = new Map<number, { team: string; managers: string; pts: number; hi: number; lo: number; g: number }>();
+    for (const g of seasonGames) for (const x of [g.home, g.away]) {
+      const c = pfBy.get(x.teamId) ?? { team: x.team, managers: x.managers, pts: 0, hi: 0, lo: 1e9, g: 0 };
+      c.pts += x.pts; c.g++; c.hi = Math.max(c.hi, x.pts); c.lo = Math.min(c.lo, x.pts);
+      pfBy.set(x.teamId, c);
+    }
+    const leaders = [...pfBy.values()].map((x) => ({ ...x, avg: r2(x.pts / x.g), pts: r2(x.pts) })).sort((a, b) => b.avg - a.avg);
+    // week movers: rank by points this week vs season avg
+    const movers = sorted.map((x) => { const l = leaders.find((y) => y.managers === x.s.managers); return { team: x.s.team, managers: x.s.managers, pts: x.s.pts, diff: r2(x.s.pts - (l?.avg ?? x.s.pts)) }; }).sort((a, b) => b.diff - a.diff);
+    // next week preview
+    const nextWeek = week + 1;
+    const byId = new Map((s.teams ?? []).map((t) => [t.id, t]));
+    const recOf = (id: number) => rec.get(id);
+    const preview = (s.schedule ?? []).filter((m) => m.matchupPeriodId === nextWeek && m.home?.teamId != null && m.away?.teamId != null).map((m) => {
+      const h = byId.get(m.home!.teamId)!, a = byId.get(m.away!.teamId)!;
+      const hm = L.teamManagers(s, h).join(" & "), am = L.teamManagers(s, a).join(" & ");
+      const hr = recOf(h.id ?? 0), ar = recOf(a.id ?? 0);
+      const hh = h2h(hm, am);
+      const ha = leaders.find((x) => x.managers === hm)?.avg ?? 0, aa = leaders.find((x) => x.managers === am)?.avg ?? 0;
+      return { home: { team: L.teamName(h), managers: hm, rec: hr ? `${hr.w}-${hr.l}` : "0-0", avg: ha }, away: { team: L.teamName(a), managers: am, rec: ar ? `${ar.w}-${ar.l}` : "0-0", avg: aa }, h2h: hh, pick: ha >= aa ? hm : am };
+    });
+    const combined = [...wk].sort((a, b) => b.home.pts + b.away.pts - (a.home.pts + a.away.pts));
+    const margins = [...wk].sort((a, b) => Math.abs(a.home.pts - a.away.pts) - Math.abs(b.home.pts - b.away.pts));
+    const byNumbers = [
+      { label: "Points scored", value: r2(scores.reduce((a, b) => a + b.s.pts, 0)).toFixed(1) },
+      { label: "Highest combined", value: combined[0] ? (combined[0].home.pts + combined[0].away.pts).toFixed(1) : "—" },
+      { label: "Closest margin", value: margins[0] ? Math.abs(margins[0].home.pts - margins[0].away.pts).toFixed(2) : "—" },
+      { label: "Widest margin", value: margins.at(-1) ? Math.abs(margins.at(-1)!.home.pts - margins.at(-1)!.away.pts).toFixed(2) : "—" },
+      { label: "Teams over 150", value: String(scores.filter((x) => x.s.pts >= 150).length) },
+      { label: "Spread top–bottom", value: (best.s.pts - worst.s.pts).toFixed(1) },
+    ];
+    const gossip = [
+      streaks[0] ? `${streaks[0].managers} ${streaks[0].type === "W" ? "has won" : "has dropped"} ${streaks[0].n} straight. ${streaks[0].type === "W" ? "Who stops them?" : "Somebody check on them."}` : null,
+      movers[0] ? `Sources say ${movers[0].managers} played ${movers[0].diff.toFixed(1)} points above their season average. Coincidence? We think not.` : null,
+      movers.at(-1) ? `${movers.at(-1)!.managers} was ${Math.abs(movers.at(-1)!.diff).toFixed(1)} points below their norm. The bench reportedly outscored the starters in the group chat's imagination.` : null,
+      allPlay.at(-1) ? `${allPlay.at(-1)!.managers} would have lost to every single team this week. Every. Single. One.` : null,
+      leaders[0] ? `${leaders[0].managers} leads the league at ${leaders[0].avg.toFixed(1)} per week. Pay respects.` : null,
+    ].filter((x): x is string => !!x);
     const issue = {
       volume: years.indexOf(s.seasonId ?? 0) >= 0 ? s.seasonId! - Math.min(...years) + 1 : 1,
       lead,
       stories: stories.slice(1),
-      topScorer: { who: best.s.managers, pts: best.s.pts },
-      bust: { who: worst.s.managers, pts: worst.s.pts },
-      unluckiest: unluckiest ? { who: unluckiest.s.managers, pts: unluckiest.s.pts } : null,
-      luckiest: luckiest ? { who: luckiest.s.managers, pts: luckiest.s.pts } : null,
+      topScorer: { team: best.s.team, who: best.s.managers, pts: best.s.pts },
+      bust: { team: worst.s.team, who: worst.s.managers, pts: worst.s.pts },
+      unluckiest: unluckiest ? { team: unluckiest.s.team, who: unluckiest.s.managers, pts: unluckiest.s.pts } : null,
+      luckiest: luckiest ? { team: luckiest.s.team, who: luckiest.s.managers, pts: luckiest.s.pts } : null,
       avg: r2(avg),
       seasonAvg: r2(seasonAvg),
       standings,
       moves,
+      scoreboard,
+      allPlay,
+      streaks,
+      leaders,
+      movers,
+      preview,
+      nextWeek,
+      byNumbers,
+      gossip,
       editorial:
         avg > seasonAvg
           ? `Scoring was up this week — the league averaged ${avg.toFixed(1)} points, ${(avg - seasonAvg).toFixed(1)} above the season norm. Offenses everywhere ate.`
