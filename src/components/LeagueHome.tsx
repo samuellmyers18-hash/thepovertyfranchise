@@ -125,7 +125,7 @@ export function LeagueHome() {
               {data.power.map((p) => (
                 <tr key={p.teamId} className="border-t border-border">
                   <td className="px-3 py-2 text-2xl text-primary">{p.rank}</td>
-                  <td className="px-3 py-2"><span className="font-semibold text-foreground">{p.team}</span><span className="block text-xs text-muted-foreground">{p.managers}</span></td>
+                  <td className="px-3 py-2"><span className="font-semibold text-foreground">{p.team}</span><ManagerNames names={p.managers} className="block text-xs text-muted-foreground" /></td>
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-16 overflow-hidden rounded-full bg-muted">
@@ -154,7 +154,7 @@ export function LeagueHome() {
               {data.standings.map((s, i) => (
                 <tr key={s.teamId} className="border-t border-border">
                   <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
-                  <td className="px-3 py-2"><span className="font-semibold text-foreground">{s.team}</span><span className="block text-xs text-muted-foreground">{s.managers}</span></td>
+                  <td className="px-3 py-2"><span className="font-semibold text-foreground">{s.team}</span><ManagerNames names={s.managers} className="block text-xs text-muted-foreground" /></td>
                   <td className="px-3 py-2">{s.wins}-{s.losses}{s.ties ? `-${s.ties}` : ""}</td>
                   <td className="px-3 py-2">{s.pf.toFixed(1)}</td>
                   <td className="px-3 py-2">{s.pa.toFixed(1)}</td>
@@ -185,7 +185,7 @@ export function LeagueHome() {
                 <span className="w-6 text-xl font-black text-primary">{i + 1}</span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="truncate font-semibold text-foreground">{t.who}</span>
+                    <ManagerNames names={t.who} className="truncate font-semibold text-foreground" />
                     <span className="text-sm font-bold text-foreground">{t.pts.toFixed(1)}</span>
                   </div>
                   <div className="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-muted">
@@ -205,7 +205,7 @@ export function LeagueHome() {
                 <span className="w-6 text-xl font-black text-primary">{i + 1}</span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="truncate font-semibold text-foreground">{p.name}</span>
+                    <Link to="/managers/$key" params={{ key: mKey(p.name) }} className="truncate font-semibold text-foreground hover:text-primary hover:underline">{p.name}</Link>
                     <span className="text-sm font-bold text-foreground">{p.pts.toLocaleString()}</span>
                   </div>
                   <div className="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-muted">
