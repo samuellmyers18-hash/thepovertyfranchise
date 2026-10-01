@@ -53,14 +53,14 @@ export function predictGame(seasons: RawSeason[], s: RawSeason, homeId: number, 
   // confidence spreads across the 51–92 range instead of pinning at the cap.
   const cap = (x: number, m: number) => Math.max(-m, Math.min(m, x));
   const f = {
-    avg: cap(((hAvg - aAvg) / 25) * 0.9, 0.55),
-    recent: cap(((hRecent - aRecent) / 25) * 0.7, 0.45),
-    proj: hasProj ? cap(((homeProj! - awayProj!) / 25) * 0.5, 0.35) : 0,
-    h2h: hh + ah >= 2 ? ((hh - ah) / (hh + ah)) * 0.4 : 0,
-    rec: cap((hWin - aWin) * 0.5, 0.35),
+    avg: cap(((hAvg - aAvg) / 30) * 0.7, 0.45),
+    recent: cap(((hRecent - aRecent) / 30) * 0.55, 0.35),
+    proj: hasProj ? cap(((homeProj! - awayProj!) / 30) * 0.4, 0.3) : 0,
+    h2h: hh + ah >= 2 ? ((hh - ah) / (hh + ah)) * 0.3 : 0,
+    rec: cap((hWin - aWin) * 0.4, 0.25),
   };
   const z = f.avg + f.recent + f.proj + f.h2h + f.rec;
-  const prob = 1 / (1 + Math.exp(-z * 1.1));
+  const prob = 1 / (1 + Math.exp(-z));
   const pick: "home" | "away" = z >= 0 ? "home" : "away";
   const confidence = Math.round(Math.min(92, Math.max(51, (pick === "home" ? prob : 1 - prob) * 100)));
   const sign = pick === "home" ? 1 : -1;
