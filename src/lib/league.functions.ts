@@ -124,7 +124,7 @@ export const releaseManager = createServerFn({ method: "POST" })
 // ---------- Home: standings, power rankings, fun facts ----------
 
 export type StandingRow = { teamId: number; team: string; managers: string; wins: number; losses: number; ties: number; pf: number; pa: number; streak: string };
-export type PowerRow = StandingRow & { rank: number; score: number; allPlay: string; recentAvg: number; proj: number; note: string };
+export type PowerRow = StandingRow & { rank: number; score: number; allPlay: string; recentAvg: number; proj: number; ros: number; note: string };
 export type FunFact = { title: string; value: string; detail: string };
 export type WeekPoint = { week: number; avg: number; high: number; highWho: string };
 export type TopScore = { who: string; pts: number; season: number; week: number };
