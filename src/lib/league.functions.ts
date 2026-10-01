@@ -275,23 +275,25 @@ export const getLeagueHome = createServerFn({ method: "POST" })
     const featured = matchups.reduce<MatchupRow | null>((b, m) => (b === null || m.homePts + m.awayPts > b.homePts + b.awayPts ? m : b), null);
 
     // Recent roster moves (waivers, free agents, trades) from the current season.
-    const playerNames = await L.loadPlayerNames(conn, cur.seasonId ?? 0);
+    const txns = (cur.transactions ?? [])
+      .filter((t) => (t.status ?? "EXECUTED") === "EXECUTED" && ["WAIVER", "FREEAGENT", "TRADE"].includes(t.type ?? ""))
+      .sort((a, b) => (b.proposedDate ?? 0) - (a.proposedDate ?? 0))
+      .slice(0, 12);
+    const pids = [...new Set(txns.flatMap((t) => (t.items ?? []).map((i) => i.playerId ?? 0)).filter(Boolean))];
+    const playerNames = await L.loadPlayerNames(cur.seasonId ?? 0, pids);
+    const pname = (id?: number) => playerNames[id ?? 0] ?? "Unknown";
     const teamLabel = (id?: number) => {
       const t = teams.find((x) => x.id === id);
       return t ? { team: label(t).team, managers: L.teamManagers(cur, t) } : { team: "?", managers: [] as string[] };
     };
-    const moves: MoveRow[] = (cur.transactions ?? [])
-      .filter((t) => (t.status ?? "EXECUTED") === "EXECUTED" && ["WAIVER", "FREEAGENT", "TRADE"].includes(t.type ?? ""))
-      .sort((a, b) => (b.proposedDate ?? 0) - (a.proposedDate ?? 0))
-      .slice(0, 12)
-      .map((t) => {
+    const moves: MoveRow[] = txns.map((t) => {
         const date = new Date(t.proposedDate ?? 0).toLocaleDateString("en-US", { month: "short", day: "numeric" });
         if (t.type === "TRADE") {
           const adds = (t.items ?? []).filter((i) => i.type === "ADD");
           const byTo = new Map<number, string[]>();
           for (const i of adds) {
             const to = i.toTeamId ?? 0;
-            byTo.set(to, [...(byTo.get(to) ?? []), playerNames.get(i.playerId ?? 0) ?? "Unknown"]);
+            byTo.set(to, [...(byTo.get(to) ?? []), pname(i.playerId)]);
           }
           return {
             kind: "Trade" as const, date,
@@ -305,8 +307,8 @@ export const getLeagueHome = createServerFn({ method: "POST" })
         const drop = (t.items ?? []).find((i) => i.type === "DROP");
         const who = teamLabel(t.teamId ?? add?.toTeamId);
         const parts = [
-          add ? `+ ${playerNames.get(add.playerId ?? 0) ?? "Unknown"}` : null,
-          drop ? `− ${playerNames.get(drop.playerId ?? 0) ?? "Unknown"}` : null,
+          add ? `+ ${pname(add.playerId)}` : null,
+          drop ? `− ${pname(drop.playerId)}` : null,
         ].filter(Boolean).join(" / ");
         return { kind: t.type === "WAIVER" ? ("Waiver" as const) : ("Free agent" as const), date, team: who.team, managers: who.managers, players: parts, bid: t.type === "WAIVER" ? (t.bidAmount ?? null) : null };
       });
