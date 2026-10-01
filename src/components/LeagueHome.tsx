@@ -15,8 +15,10 @@ function TrendChart({ trend }: { trend: { week: number; avg: number; high: numbe
           <div className="pointer-events-none absolute -top-1 z-10 hidden -translate-y-full whitespace-nowrap rounded border border-border bg-popover px-2 py-1 text-xs text-popover-foreground shadow group-hover:block">
             Wk {t.week}: avg {t.avg.toFixed(1)} · high {t.high.toFixed(1)} ({t.highWho})
           </div>
-          <div className="w-full rounded-t bg-primary/25" style={{ height: `${(t.high / max) * 140}px` }} />
-          <div className="-mt-[inherit] w-full rounded-t bg-primary" style={{ height: `${(t.avg / max) * 140}px`, marginTop: `-${(t.high / max) * 140}px` }} />
+          <div className="flex w-full flex-col justify-end" style={{ height: "150px" }}>
+            <div className="w-full rounded-t bg-primary/25" style={{ height: `${(t.high / max) * 100}%` }} />
+            <div className="w-full bg-primary" style={{ height: `${(t.avg / max) * 100}%`, marginTop: `-${(t.avg / max) * 150}px` }} />
+          </div>
           <span className="text-[10px] text-muted-foreground">{t.week}</span>
         </div>
       ))}
