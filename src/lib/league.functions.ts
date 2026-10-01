@@ -129,7 +129,7 @@ export type FunFact = { title: string; value: string; detail: string };
 export type WeekPoint = { week: number; avg: number; high: number; highWho: string };
 export type TopScore = { who: string; pts: number; season: number; week: number };
 export type PointsLeader = { name: string; pts: number; seasons: number };
-export type MatchupRow = { homeTeam: string; awayTeam: string; homeManagers: string[]; awayManagers: string[]; homePts: number; awayPts: number };
+export type MatchupRow = { homeTeam: string; awayTeam: string; homeManagers: string[]; awayManagers: string[]; homePts: number; awayPts: number; homeProj?: number | null; awayProj?: number | null };
 export type MoveRow = { kind: "Waiver" | "Free agent" | "Trade"; date: string; team: string; managers: string[]; players: string; bid: number | null };
 
 export const getLeagueHome = createServerFn({ method: "POST" })
@@ -256,7 +256,8 @@ export const getLeagueHome = createServerFn({ method: "POST" })
       .sort((a, b) => b.pts - a.pts)
       .slice(0, 5);
 
-    // This week's matchups; featured = highest combined score.
+    // Current week's matchups (live or upcoming); featured = highest combined score/projection.
+    const currentWeek = cur.status?.currentMatchupPeriod ?? lastWeek;
     const matchups: MatchupRow[] = [];
     for (const g of games) {
       if (g.home?.teamId == null || g.away?.teamId == null) continue;
@@ -264,15 +265,20 @@ export const getLeagueHome = createServerFn({ method: "POST" })
       const at = teams.find((t) => t.id === g.away!.teamId);
       if (!ht || !at) continue;
       for (const wk of L.matchWeeks(g)) {
-        if (wk.period !== lastWeek) continue;
+        if (wk.period !== currentWeek) continue;
         matchups.push({
           homeTeam: label(ht).team, awayTeam: label(at).team,
           homeManagers: L.teamManagers(cur, ht), awayManagers: L.teamManagers(cur, at),
           homePts: r2(wk.homePts), awayPts: r2(wk.awayPts),
+          homeProj: g.home!.totalProjectedPointsLive != null ? r2(g.home!.totalProjectedPointsLive) : null,
+          awayProj: g.away!.totalProjectedPointsLive != null ? r2(g.away!.totalProjectedPointsLive) : null,
         });
       }
     }
-    const featured = matchups.reduce<MatchupRow | null>((b, m) => (b === null || m.homePts + m.awayPts > b.homePts + b.awayPts ? m : b), null);
+    const featured = matchups.reduce<MatchupRow | null>((b, m) => {
+      const score = (x: MatchupRow) => (x.homePts + x.awayPts > 0 ? x.homePts + x.awayPts : (x.homeProj ?? 0) + (x.awayProj ?? 0));
+      return b === null || score(m) > score(b) ? m : b;
+    }, null);
 
     // Recent roster moves (waivers, free agents, trades) from the current season.
     const txns = (cur.transactions ?? [])

@@ -15,8 +15,8 @@ export type RawMatch = {
   matchupPeriodId?: number;
   playoffTierType?: string;
   winner?: string;
-  home?: { teamId?: number; totalPoints?: number; pointsByScoringPeriod?: Record<string, number>; cumulativeScore?: { scoreByScoringPeriod?: Record<string, number> } };
-  away?: { teamId?: number; totalPoints?: number; pointsByScoringPeriod?: Record<string, number>; cumulativeScore?: { scoreByScoringPeriod?: Record<string, number> } };
+  home?: { teamId?: number; totalPoints?: number; totalProjectedPointsLive?: number; pointsByScoringPeriod?: Record<string, number>; cumulativeScore?: { scoreByScoringPeriod?: Record<string, number> } };
+  away?: { teamId?: number; totalPoints?: number; totalProjectedPointsLive?: number; pointsByScoringPeriod?: Record<string, number>; cumulativeScore?: { scoreByScoringPeriod?: Record<string, number> } };
 };
 
 /**
