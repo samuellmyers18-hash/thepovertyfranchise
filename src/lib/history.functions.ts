@@ -8,7 +8,7 @@ type L = Awaited<ReturnType<typeof lib>>;
 
 export type Side = { teamId: number; team: string; managers: string; pts: number };
 export type Game = { season: number; week: number; playoff: boolean; home: Side; away: Side };
-export type RecordEntry = { value: string; who: string; detail: string; season: number };
+export type RecordEntry = { value: string; who: string; team?: string; detail: string; season: number };
 export type RecordCat = { title: string; blurb: string; entries: RecordEntry[] };
 
 const done = (m: RawMatch) => m.winner === "HOME" || m.winner === "AWAY" || m.winner === "TIE";
@@ -79,9 +79,9 @@ export const getRecords = createServerFn({ method: "POST" })
     const titles = new Map<string, number[]>();
     teamSeasons.filter((t) => t.rank === 1).forEach((t) => t.managers.split(" & ").forEach((n) => titles.set(n, [...(titles.get(n) ?? []), t.season])));
 
-    const sc = (x: (typeof scores)[number]): RecordEntry => ({ value: x.s.pts.toFixed(2), who: x.s.managers, detail: `${label(x.g)} vs ${x.opp.managers} (${x.opp.pts.toFixed(2)})`, season: x.g.season });
-    const gm = (g: Game, v: string): RecordEntry => { const [w, l] = winLose(g); return { value: v, who: w.managers, detail: `${w.pts.toFixed(2)}–${l.pts.toFixed(2)} over ${l.managers} · ${label(g)}`, season: g.season }; };
-    const ts = (t: (typeof teamSeasons)[number], v: string): RecordEntry => ({ value: v, who: t.managers, detail: `${t.team} · ${t.season} (${t.w}-${t.l})`, season: t.season });
+    const sc = (x: (typeof scores)[number]): RecordEntry => ({ value: x.s.pts.toFixed(2), who: x.s.managers, team: x.s.team, detail: `${label(x.g)} vs ${x.opp.managers} (${x.opp.pts.toFixed(2)})`, season: x.g.season });
+    const gm = (g: Game, v: string): RecordEntry => { const [w, l] = winLose(g); return { value: v, who: w.managers, team: w.team, detail: `${w.pts.toFixed(2)}–${l.pts.toFixed(2)} over ${l.managers} · ${label(g)}`, season: g.season }; };
+    const ts = (t: (typeof teamSeasons)[number], v: string): RecordEntry => ({ value: v, who: t.managers, team: t.team, detail: `${t.season} (${t.w}-${t.l})`, season: t.season });
 
     const cats: RecordCat[] = [
       { title: "Highest single week", blurb: "The biggest one-week explosions ever.", entries: top(scores, (x) => x.s.pts).map(sc) },
@@ -89,8 +89,8 @@ export const getRecords = createServerFn({ method: "POST" })
       { title: "Biggest blowouts", blurb: "Largest margins of victory.", entries: top(all, (g) => Math.abs(g.home.pts - g.away.pts)).map((g) => gm(g, `+${Math.abs(g.home.pts - g.away.pts).toFixed(2)}`)) },
       { title: "Closest games", blurb: "Decided by a hair.", entries: top(all.filter((g) => g.home.pts !== g.away.pts), (g) => -Math.abs(g.home.pts - g.away.pts)).map((g) => gm(g, `+${Math.abs(g.home.pts - g.away.pts).toFixed(2)}`)) },
       { title: "Highest-scoring games", blurb: "Combined points, both teams.", entries: top(all, (g) => g.home.pts + g.away.pts).map((g) => gm(g, (g.home.pts + g.away.pts).toFixed(2))) },
-      { title: "Highest score in a loss", blurb: "Did everything right and still lost.", entries: top(all, (g) => winLose(g)[1].pts).map((g) => { const [w, l] = winLose(g); return { value: l.pts.toFixed(2), who: l.managers, detail: `lost to ${w.managers} (${w.pts.toFixed(2)}) · ${label(g)}`, season: g.season }; }) },
-      { title: "Lowest score in a win", blurb: "Ugly wins still count.", entries: top(all, (g) => -winLose(g)[0].pts).map((g) => { const [w, l] = winLose(g); return { value: w.pts.toFixed(2), who: w.managers, detail: `beat ${l.managers} (${l.pts.toFixed(2)}) · ${label(g)}`, season: g.season }; }) },
+      { title: "Highest score in a loss", blurb: "Did everything right and still lost.", entries: top(all, (g) => winLose(g)[1].pts).map((g) => { const [w, l] = winLose(g); return { value: l.pts.toFixed(2), who: l.managers, team: l.team, detail: `lost to ${w.managers} (${w.pts.toFixed(2)}) · ${label(g)}`, season: g.season }; }) },
+      { title: "Lowest score in a win", blurb: "Ugly wins still count.", entries: top(all, (g) => -winLose(g)[0].pts).map((g) => { const [w, l] = winLose(g); return { value: w.pts.toFixed(2), who: w.managers, team: w.team, detail: `beat ${l.managers} (${l.pts.toFixed(2)}) · ${label(g)}`, season: g.season }; }) },
       { title: "Most points in a season", blurb: "Total points for.", entries: top(teamSeasons, (t) => t.pf).map((t) => ts(t, t.pf.toFixed(1))) },
       { title: "Fewest points in a season", blurb: "Offensively challenged.", entries: top(teamSeasons, (t) => -t.pf / t.gp).map((t) => ts(t, `${(t.pf / t.gp).toFixed(1)}/wk`)) },
       { title: "Most points against", blurb: "Everyone saved their best for them.", entries: top(teamSeasons, (t) => t.pa).map((t) => ts(t, t.pa.toFixed(1))) },
@@ -104,7 +104,7 @@ export const getRecords = createServerFn({ method: "POST" })
   });
 
 /* ---------------- Awards ---------------- */
-export type Award = { title: string; emoji: string; who: string; detail: string };
+export type Award = { title: string; emoji: string; who: string; team?: string; detail: string };
 
 export const getAwards = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -136,7 +136,8 @@ export const getAwards = createServerFn({ method: "POST" })
     for (const t of s.transactions ?? []) if (t.status === "EXECUTED" && t.type === "TRADE" && t.teamId != null) trades.set(t.teamId, (trades.get(t.teamId) ?? 0) + 1);
 
     const awards: Award[] = [];
-    const push = (title: string, emoji: string, who: string | undefined, detail: string) => who && awards.push({ title, emoji, who, detail });
+    const teamOf = (who: string) => teams.find((t) => t.managers === who)?.team;
+    const push = (title: string, emoji: string, who: string | undefined, detail: string) => who && awards.push({ title, emoji, who, team: teamOf(who), detail });
     const by = <T,>(arr: T[], f: (x: T) => number) => [...arr].sort((a, b) => f(b) - f(a))[0];
     const champ = teams.find((t) => t.rank === 1);
     push("Champion", "🏆", champ?.managers, champ ? `${champ.team} · ${champ.w}-${champ.l}` : "");
