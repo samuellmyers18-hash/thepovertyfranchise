@@ -266,7 +266,8 @@ export const getRivalries = createServerFn({ method: "POST" })
   .handler(async () => {
     const L = await lib();
     const { seasons, error } = await L.loadAllSeasons();
-    const map = new Map<string, Rivalry>();
+    type RivalryAcc = Omit<Rivalry, "closest" | "seasonCount"> & { closest: number; seasons: Set<number> };
+    const map = new Map<string, RivalryAcc>();
     for (const s of [...seasons].sort((x, y) => (x.seasonId ?? 0) - (y.seasonId ?? 0))) {
       const byId = new Map((s.teams ?? []).map((t) => [t.id, L.teamManagers(s, t)]));
       for (const m of s.schedule ?? []) {
