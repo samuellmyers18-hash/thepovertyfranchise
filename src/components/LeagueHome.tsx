@@ -24,26 +24,33 @@ export function ManagerNames({ names, className }: { names: string; className?: 
 }
 
 function MatchupCard({ m, big }: { m: MatchupRow; big?: boolean }) {
+  const played = m.homePts + m.awayPts > 0;
   const homeWon = m.homePts > m.awayPts;
   const tied = m.homePts === m.awayPts;
   return (
     <div className={`rounded-md border bg-card ${big ? "border-primary/50 p-6" : "border-border p-4"}`}>
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className={`truncate font-semibold ${homeWon && !tied ? "text-primary" : "text-foreground"} ${big ? "text-xl" : ""}`}>{m.homeTeam}</p>
+          <p className={`truncate font-semibold ${played && homeWon && !tied ? "text-primary" : "text-foreground"} ${big ? "text-xl" : ""}`}>{m.homeTeam}</p>
           <ManagerNames names={m.homeManagers.join(" & ")} className="text-xs text-muted-foreground" />
         </div>
-        <p className={`${big ? "text-4xl" : "text-2xl"} font-black ${homeWon && !tied ? "text-primary" : "text-foreground"}`}>{m.homePts.toFixed(1)}</p>
+        <div className="text-right">
+          <p className={`${big ? "text-4xl" : "text-2xl"} font-black ${played && homeWon && !tied ? "text-primary" : "text-foreground"}`}>{m.homePts.toFixed(1)}</p>
+          {m.homeProj != null && <p className="text-[10px] uppercase tracking-wide text-muted-foreground">proj {m.homeProj.toFixed(1)}</p>}
+        </div>
       </div>
       <div className="my-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
         <span className="h-px flex-1 bg-border" />vs<span className="h-px flex-1 bg-border" />
       </div>
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className={`truncate font-semibold ${!homeWon && !tied ? "text-primary" : "text-foreground"} ${big ? "text-xl" : ""}`}>{m.awayTeam}</p>
+          <p className={`truncate font-semibold ${played && !homeWon && !tied ? "text-primary" : "text-foreground"} ${big ? "text-xl" : ""}`}>{m.awayTeam}</p>
           <ManagerNames names={m.awayManagers.join(" & ")} className="text-xs text-muted-foreground" />
         </div>
-        <p className={`${big ? "text-4xl" : "text-2xl"} font-black ${!homeWon && !tied ? "text-primary" : "text-foreground"}`}>{m.awayPts.toFixed(1)}</p>
+        <div className="text-right">
+          <p className={`${big ? "text-4xl" : "text-2xl"} font-black ${played && !homeWon && !tied ? "text-primary" : "text-foreground"}`}>{m.awayPts.toFixed(1)}</p>
+          {m.awayProj != null && <p className="text-[10px] uppercase tracking-wide text-muted-foreground">proj {m.awayProj.toFixed(1)}</p>}
+        </div>
       </div>
     </div>
   );
