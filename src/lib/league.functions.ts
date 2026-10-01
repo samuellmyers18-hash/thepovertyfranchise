@@ -303,3 +303,70 @@ export const getDraft = createServerFn({ method: "POST" })
       .sort((a, b) => a.overall - b.overall);
     return { error, years, season: s.seasonId ?? null, picks };
   });
+
+// ---------- Single manager profile ----------
+
+export const getManagerProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { key: string }) => ({ key: mKey(String(input?.key ?? "")) }))
+  .handler(async ({ data, context }) => {
+    const L = await lib();
+    const { seasons, error } = await L.loadAllSeasons();
+    const manager = buildManagers(L, seasons).find((m) => m.key === data.key) ?? null;
+    if (!manager) return { error: error ?? "Manager not found.", manager: null, facts: [] as FunFact[], claimed: false };
+    const { data: claim } = await context.supabase.from("manager_claims").select("user_id").eq("manager_key", data.key).maybeSingle();
+
+    type Gm = { season: number; week: number; me: number; opp: number; opps: string[]; playoff: boolean };
+    const games: Gm[] = [];
+    for (const s of [...seasons].sort((a, b) => (a.seasonId ?? 0) - (b.seasonId ?? 0))) {
+      const byId = new Map((s.teams ?? []).map((t) => [t.id, L.teamManagers(s, t)]));
+      for (const m of [...(s.schedule ?? [])].sort((a, b) => (a.matchupPeriodId ?? 0) - (b.matchupPeriodId ?? 0))) {
+        if (!done(m) || m.home?.teamId == null || m.away?.teamId == null) continue;
+        const hm = byId.get(m.home.teamId) ?? [], am = byId.get(m.away.teamId) ?? [];
+        const isHome = hm.some((n) => mKey(n) === data.key), isAway = am.some((n) => mKey(n) === data.key);
+        if (!isHome && !isAway) continue;
+        games.push({
+          season: s.seasonId ?? 0, week: m.matchupPeriodId ?? 0, playoff: !regular(m),
+          me: (isHome ? m.home.totalPoints : m.away.totalPoints) ?? 0,
+          opp: (isHome ? m.away.totalPoints : m.home.totalPoints) ?? 0,
+          opps: isHome ? am : hm,
+        });
+      }
+    }
+    const facts: FunFact[] = [];
+    const best = <T,>(arr: T[], f: (x: T) => number) => arr.reduce<T | null>((b, x) => (b === null || f(x) > f(b) ? x : b), null);
+    const at = (g: Gm) => `${g.season} week ${g.week} vs ${g.opps.join(" & ")}`;
+    const hi = best(games, (g) => g.me);
+    if (hi) facts.push({ title: "Career-high score", value: hi.me.toFixed(2), detail: at(hi) });
+    const lo = best(games.filter((g) => g.me > 0), (g) => -g.me);
+    if (lo) facts.push({ title: "Career-low score", value: lo.me.toFixed(2), detail: at(lo) });
+    const bw = best(games.filter((g) => g.me > g.opp), (g) => g.me - g.opp);
+    if (bw) facts.push({ title: "Biggest win", value: `+${(bw.me - bw.opp).toFixed(2)}`, detail: at(bw) });
+    const wl = best(games.filter((g) => g.me < g.opp), (g) => g.opp - g.me);
+    if (wl) facts.push({ title: "Worst loss", value: `-${(wl.opp - wl.me).toFixed(2)}`, detail: at(wl) });
+    let streak = 0, maxW = 0, lstreak = 0, maxL = 0;
+    for (const g of games) {
+      if (g.me > g.opp) { streak++; lstreak = 0; } else if (g.me < g.opp) { lstreak++; streak = 0; } else { streak = 0; lstreak = 0; }
+      maxW = Math.max(maxW, streak); maxL = Math.max(maxL, lstreak);
+    }
+    facts.push({ title: "Longest win streak", value: String(maxW), detail: "games in a row" });
+    facts.push({ title: "Longest losing streak", value: String(maxL), detail: "games in a row" });
+    const vs = new Map<string, { w: number; l: number }>();
+    for (const g of games) for (const o of g.opps) {
+      const r = vs.get(o) ?? { w: 0, l: 0 };
+      if (g.me > g.opp) r.w++; else if (g.me < g.opp) r.l++;
+      vs.set(o, r);
+    }
+    const ent = [...vs.entries()];
+    const fav = best(ent, ([, r]) => r.w - r.l);
+    if (fav && fav[1].w > fav[1].l) facts.push({ title: "Favorite victim", value: `${fav[1].w}-${fav[1].l}`, detail: fav[0] });
+    const nem = best(ent, ([, r]) => r.l - r.w);
+    if (nem && nem[1].l > nem[1].w) facts.push({ title: "Nemesis", value: `${nem[1].w}-${nem[1].l}`, detail: nem[0] });
+    const po = games.filter((g) => g.playoff);
+    if (po.length) facts.push({ title: "Playoff record", value: `${po.filter((g) => g.me > g.opp).length}-${po.filter((g) => g.me < g.opp).length}`, detail: `${po.length} playoff games` });
+    if (games.length) facts.push({ title: "Avg points per game", value: (games.reduce((a, g) => a + g.me, 0) / games.length).toFixed(1), detail: `${games.length} games` });
+    const luck = games.filter((g) => g.me < g.opp && g.me > 0).length ? best(games.filter((g) => g.me < g.opp), (g) => g.me) : null;
+    if (luck) facts.push({ title: "Unluckiest loss", value: luck.me.toFixed(2), detail: `Lost anyway · ${at(luck)}` });
+
+    return { error, manager, facts, claimed: Boolean(claim) };
+  });
