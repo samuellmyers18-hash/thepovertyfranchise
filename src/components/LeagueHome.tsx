@@ -123,7 +123,7 @@ export function LeagueHome() {
       <section>
         <h2 className="text-4xl text-foreground">Power rankings</h2>
         <p className="mb-4 text-sm text-muted-foreground">
-          40% all-play record (how you'd do vs. everyone each week), 30% actual record, 30% scoring over the last 3 weeks.
+          25% all-play record, 20% actual record, 20% last-3-week scoring, 15% this week's projection, 20% rest-of-season projection of each team's best lineup.
         </p>
         <div className="overflow-x-auto rounded-md border border-border">
           <table className="w-full text-sm">
