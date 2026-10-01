@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedClaimRouteImport } from './routes/_authenticated/claim'
 import { Route as AuthenticatedDraftsRouteImport } from './routes/_authenticated/drafts'
+import { Route as AuthenticatedMatchupsRouteImport } from './routes/_authenticated/matchups'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedRivalriesRouteImport } from './routes/_authenticated/rivalries'
 import { Route as AuthenticatedRostersRouteImport } from './routes/_authenticated/rosters'
@@ -48,6 +49,11 @@ const AuthenticatedClaimRoute = AuthenticatedClaimRouteImport.update({
 const AuthenticatedDraftsRoute = AuthenticatedDraftsRouteImport.update({
   id: '/drafts',
   path: '/drafts',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMatchupsRoute = AuthenticatedMatchupsRouteImport.update({
+  id: '/matchups',
+  path: '/matchups',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
@@ -84,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/claim': typeof AuthenticatedClaimRoute
   '/drafts': typeof AuthenticatedDraftsRoute
+  '/matchups': typeof AuthenticatedMatchupsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/rivalries': typeof AuthenticatedRivalriesRoute
   '/rosters': typeof AuthenticatedRostersRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/claim': typeof AuthenticatedClaimRoute
   '/drafts': typeof AuthenticatedDraftsRoute
+  '/matchups': typeof AuthenticatedMatchupsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/rivalries': typeof AuthenticatedRivalriesRoute
   '/rosters': typeof AuthenticatedRostersRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/claim': typeof AuthenticatedClaimRoute
   '/_authenticated/drafts': typeof AuthenticatedDraftsRoute
+  '/_authenticated/matchups': typeof AuthenticatedMatchupsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/rivalries': typeof AuthenticatedRivalriesRoute
   '/_authenticated/rosters': typeof AuthenticatedRostersRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/claim'
     | '/drafts'
+    | '/matchups'
     | '/profile'
     | '/rivalries'
     | '/rosters'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/claim'
     | '/drafts'
+    | '/matchups'
     | '/profile'
     | '/rivalries'
     | '/rosters'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/claim'
     | '/_authenticated/drafts'
+    | '/_authenticated/matchups'
     | '/_authenticated/profile'
     | '/_authenticated/rivalries'
     | '/_authenticated/rosters'
@@ -206,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDraftsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/matchups': {
+      id: '/_authenticated/matchups'
+      path: '/matchups'
+      fullPath: '/matchups'
+      preLoaderRoute: typeof AuthenticatedMatchupsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
@@ -248,6 +267,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedClaimRoute: typeof AuthenticatedClaimRoute
   AuthenticatedDraftsRoute: typeof AuthenticatedDraftsRoute
+  AuthenticatedMatchupsRoute: typeof AuthenticatedMatchupsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRivalriesRoute: typeof AuthenticatedRivalriesRoute
   AuthenticatedRostersRoute: typeof AuthenticatedRostersRoute
@@ -259,6 +279,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedClaimRoute: AuthenticatedClaimRoute,
   AuthenticatedDraftsRoute: AuthenticatedDraftsRoute,
+  AuthenticatedMatchupsRoute: AuthenticatedMatchupsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRivalriesRoute: AuthenticatedRivalriesRoute,
   AuthenticatedRostersRoute: AuthenticatedRostersRoute,
