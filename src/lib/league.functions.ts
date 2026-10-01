@@ -197,10 +197,12 @@ export const getLeagueHome = createServerFn({ method: "POST" })
     const maxRecent = Math.max(1, ...raw.map((r) => r.recentAvg));
     const power: PowerRow[] = raw
       .map((r) => {
-        const score = 0.4 * r.apRate + 0.3 * r.winRate + 0.3 * (r.recentAvg / maxRecent);
+        const proj = projByTeam.get(r.s.teamId) ?? 0;
+        const projRate = proj / maxProj;
+        const score = 0.3 * r.apRate + 0.25 * r.winRate + 0.25 * (r.recentAvg / maxRecent) + 0.2 * projRate;
         const luck = r.winRate - r.apRate;
-        const note = luck > 0.12 ? "Riding some luck" : luck < -0.12 ? "Better than the record" : r.recentAvg === maxRecent ? "Hottest offense" : "";
-        return { ...r.s, rank: 0, score: Math.round(score * 1000) / 10, allPlay: `${Math.round(r.apW)}-${Math.round(r.apL)}`, recentAvg: r2(r.recentAvg), note };
+        const note = proj === maxProj && proj > 0 ? "Best roster this week" : luck > 0.12 ? "Riding some luck" : luck < -0.12 ? "Better than the record" : r.recentAvg === maxRecent ? "Hottest offense" : "";
+        return { ...r.s, rank: 0, score: Math.round(score * 1000) / 10, allPlay: `${Math.round(r.apW)}-${Math.round(r.apL)}`, recentAvg: r2(r.recentAvg), proj: r2(proj), note };
       })
       .sort((a, b) => b.score - a.score)
       .map((p, i) => ({ ...p, rank: i + 1 }));
