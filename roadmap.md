@@ -17,3 +17,4 @@
 - [ ] Weekly matchups section + featured matchup on home
 - [ ] Manager names clickable everywhere -> profile
 - [ ] Home: recent moves (pickups, waivers, trades)
+- [ ] Rosters: roster page + past rosters by week on manager profiles
