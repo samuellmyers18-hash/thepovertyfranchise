@@ -242,7 +242,8 @@ export function LeagueHome() {
                   <p className="mt-1 text-xs text-muted-foreground">
                     {mv.team}
                     {mv.managers.length > 0 && <> · <ManagerNames names={mv.managers.join(" & ")} /></>}
-                    {mv.bid != null && mv.bid > 0 && ` · $${mv.bid} bid`}
+                    {mv.kind === "Waiver" && ` · $${mv.bid ?? 0} bid`}
+                    {mv.kind === "Free agent" && " · free pickup"}
                   </p>
                 </div>
                 <span className="shrink-0 text-xs text-muted-foreground">{mv.date}</span>
