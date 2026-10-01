@@ -12,3 +12,5 @@
 - [ ] Player rankings: pull data from Flock Fantasy (blocked: no public data, paid login needed)
 - [x] Power rankings: add rest-of-season roster projections
 - [x] Records: add waiver/pickup, trade and other non-game records
+
+- [x] Fix visual bug on Poverty Post: Lee Jennings vs Samuel Myers story

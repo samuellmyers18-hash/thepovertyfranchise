@@ -23,18 +23,18 @@ export const Route = createFileRoute("/_authenticated/newsletter")({
 type S = { team: string; managers: string; pts: number };
 function Who({ x, big }: { x: { team: string; managers: string }; big?: boolean }) {
   return (
-    <div className="leading-tight">
-      <p className={`${big ? "text-base" : "text-[11px]"} uppercase tracking-wider text-primary`}>{x.team}</p>
-      <ManagerNames names={x.managers} className={big ? "text-2xl text-foreground" : "text-sm text-foreground"} />
+    <div className="min-w-0">
+      <p className={`${big ? "text-base" : "text-[11px]"} uppercase leading-snug tracking-wider text-primary`}>{x.team}</p>
+      <ManagerNames names={x.managers} className={`mt-0.5 block leading-snug ${big ? "text-2xl text-foreground" : "text-sm text-foreground"}`} />
     </div>
   );
 }
 function Score({ a, b }: { a: S; b: S }) {
   return (
-    <div className="mt-1 flex items-center gap-4 text-xs text-muted-foreground">
-      <div className="flex items-center gap-2"><Who x={a} /><span className="text-lg text-foreground">{a.pts.toFixed(2)}</span></div>
+    <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+      <div className="flex min-w-0 items-center gap-2"><Who x={a} /><span className="shrink-0 text-lg text-foreground">{a.pts.toFixed(2)}</span></div>
       <span>vs</span>
-      <div className="flex items-center gap-2"><Who x={b} /><span className="text-lg text-foreground">{b.pts.toFixed(2)}</span></div>
+      <div className="flex min-w-0 items-center gap-2"><Who x={b} /><span className="shrink-0 text-lg text-foreground">{b.pts.toFixed(2)}</span></div>
     </div>
   );
 }
