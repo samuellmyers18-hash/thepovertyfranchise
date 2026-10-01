@@ -75,7 +75,7 @@ async function getConn() {
   return data;
 }
 
-const VIEWS = "view=mTeam&view=mSettings&view=mMatchupScore&view=mDraftDetail";
+const VIEWS = "view=mTeam&view=mSettings&view=mMatchupScore&view=mMatchup&view=mDraftDetail";
 
 async function fetchSeason(leagueId: string, year: number, cookie: string): Promise<RawSeason | null> {
   const headers = { accept: "application/json", cookie, "user-agent": "Mozilla/5.0" };
