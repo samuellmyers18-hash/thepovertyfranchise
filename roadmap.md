@@ -9,3 +9,6 @@
 - [ ] Player rankings model (consensus + league history)
 - [x] Sidebar menu
 - [x] Claim manager + profile with ESPN stats (incl. past leaguemates)
+- [ ] Home: standings, power rankings, fun facts (weekly live)
+- [ ] Rivalries page
+- [ ] Draft recaps page
