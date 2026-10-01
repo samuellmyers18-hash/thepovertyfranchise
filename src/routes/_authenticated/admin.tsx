@@ -204,6 +204,8 @@ function AdminTools() {
             </form>
           </CardContent>
         </Card>
+
+        {status.data?.connected && <TeamNamesCard />}
       </div>
     </main>
   );
