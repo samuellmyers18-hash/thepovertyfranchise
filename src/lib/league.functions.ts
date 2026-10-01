@@ -199,8 +199,6 @@ export const getLeagueHome = createServerFn({ method: "POST" })
       const byId = new Map((s.teams ?? []).map((t) => [t.id, `${L.teamManagers(s, t).join(" & ") || L.teamName(t)}`]));
       for (const m of s.schedule ?? []) {
         if (!done(m) || m.home?.teamId == null || m.away?.teamId == null) continue;
-        const h = { who: byId.get(m.home.teamId) ?? "?", pts: m.home.totalPoints ?? 0 };
-        const a = { who: byId.get(m.away.teamId) ?? "?", pts: m.away.totalPoints ?? 0 };
         for (const wk of L.matchWeeks(m)) {
           const h = { who: byId.get(m.home.teamId) ?? "?", pts: wk.homePts };
           const a = { who: byId.get(m.away.teamId) ?? "?", pts: wk.awayPts };
@@ -254,17 +252,26 @@ export const getRivalries = createServerFn({ method: "POST" })
           if (h === a) continue;
           const [x, y] = (h < a ? [h, a] : [a, h]) as [string, string];
           const flip = x !== h;
-          const xp = flip ? m.away.totalPoints ?? 0 : m.home.totalPoints ?? 0;
-          const yp = flip ? m.home.totalPoints ?? 0 : m.away.totalPoints ?? 0;
-          const k = `${x}|${y}`;
-          const r = map.get(k) ?? { a: x, b: y, games: 0, aWins: 0, bWins: 0, ties: 0, aPts: 0, bPts: 0, avgMargin: 0, last: "", playoffGames: 0 };
-          r.games++;
-          if (xp > yp) r.aWins++; else if (yp > xp) r.bWins++; else r.ties++;
-          r.aPts += xp;
-          r.bPts += yp;
-          if (!regular(m)) r.playoffGames++;
-          r.last = `${s.seasonId} wk ${m.matchupPeriodId}: ${xp > yp ? x : y} ${Math.max(xp, yp).toFixed(1)}–${Math.min(xp, yp).toFixed(1)}`;
-          map.set(k, r);
+          for (const wk of L.matchWeeks(m)) {
+            const xp = flip ? wk.awayPts : wk.homePts;
+            const yp = flip ? wk.homePts : wk.awayPts;
+            const k = `${x}|${y}`;
+            const r = map.get(k) ?? { a: x, b: y, games: 0, aWins: 0, bWins: 0, ties: 0, aPts: 0, bPts: 0, avgMargin: 0, last: "", playoffGames: 0, aBest: 0, bBest: 0, biggestWin: 0, closest: Infinity, seasons: new Set<number>() };
+            r.games++;
+            if (xp > yp) r.aWins++; else if (yp > xp) r.bWins++; else r.ties++;
+            r.aPts += xp;
+            r.bPts += yp;
+            r.aBest = Math.max(r.aBest, xp);
+            r.bBest = Math.max(r.bBest, yp);
+            if (xp !== yp) {
+              r.biggestWin = Math.max(r.biggestWin, Math.abs(xp - yp));
+              r.closest = Math.min(r.closest, Math.abs(xp - yp));
+            }
+            r.seasons.add(s.seasonId ?? 0);
+            if (!regular(m)) r.playoffGames++;
+            r.last = `${s.seasonId} wk ${wk.period}: ${xp > yp ? x : y} ${Math.max(xp, yp).toFixed(1)}–${Math.min(xp, yp).toFixed(1)}`;
+            map.set(k, r);
+          }
         }
       }
     }
