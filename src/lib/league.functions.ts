@@ -579,3 +579,68 @@ export const getManagerProfile = createServerFn({ method: "POST" })
 
     return { error, manager, facts, claimed: Boolean(claim) };
   });
+
+export type RankedPlayer = {
+  id: number; name: string; pos: string; injury: string | null; rank: number; posRank: number; score: number;
+  seasonAvg: number; seasonPts: number; weekProj: number; rosProj: number; espnRank: number | null;
+  owned: number; trend: number; team: string | null; managers: string; tier: string;
+};
+
+const POS: Record<number, string> = { 1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "D/ST" };
+
+export const getPlayerRankings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const L = await lib();
+    const { seasons, error } = await L.loadAllSeasons();
+    const s = seasons[0];
+    if (!s?.seasonId) return { error: error ?? "No data yet.", season: null as number | null, week: 0, players: [] as RankedPlayer[] };
+    const year = s.seasonId;
+    const week = (s as { scoringPeriodId?: number }).scoringPeriodId ?? 1;
+    const pool = await L.fetchPlayerPool(year, week);
+    if (!pool) return { error: "Couldn't load players from ESPN.", season: year, week, players: [] as RankedPlayer[] };
+    const teamById = new Map((s.teams ?? []).map((t) => [t.id, t]));
+    const rows = pool.flatMap((e) => {
+      const p = e.player;
+      const pos = POS[p?.defaultPositionId ?? 0];
+      if (!p?.id || !p.fullName || !pos) return [];
+      const st = p.stats ?? [];
+      const seasonAct = st.find((x) => x.statSourceId === 0 && x.statSplitTypeId === 0 && x.seasonId === year);
+      const seasonProj = st.find((x) => x.statSourceId === 1 && x.statSplitTypeId === 0 && x.seasonId === year);
+      const wk = st.find((x) => x.statSourceId === 1 && x.statSplitTypeId === 1 && x.scoringPeriodId === week);
+      const t = e.onTeamId ? teamById.get(e.onTeamId) : undefined;
+      const seasonPts = seasonAct?.appliedTotal ?? 0;
+      const rosProj = Math.max(0, (seasonProj?.appliedTotal ?? 0) - seasonPts);
+      return [{
+        id: p.id, name: p.fullName, pos, injury: p.injuryStatus && p.injuryStatus !== "ACTIVE" ? p.injuryStatus : null,
+        seasonAvg: r2(seasonAct?.appliedAverage ?? 0), seasonPts: r2(seasonPts), weekProj: r2(wk?.appliedTotal ?? 0), rosProj: r2(rosProj),
+        espnRank: p.draftRanksByRankType?.PPR?.rank ?? null,
+        owned: r2(p.ownership?.percentOwned ?? 0), trend: r2(p.ownership?.percentChange ?? 0),
+        team: t ? L.teamName(t) : null,
+        managers: t ? L.teamManagers(s, t).join(" & ") : "",
+      }];
+    });
+    // Normalize within each position, then blend sources
+    const byPos = new Map<string, typeof rows>();
+    rows.forEach((r) => byPos.set(r.pos, [...(byPos.get(r.pos) ?? []), r]));
+    const scored = rows.map((r) => {
+      const g = byPos.get(r.pos)!;
+      const mx = (f: (x: (typeof rows)[number]) => number) => Math.max(1e-6, ...g.map(f));
+      const rankScore = r.espnRank ? 1 - Math.min(r.espnRank, 300) / 300 : 0;
+      const trendScore = Math.max(-1, Math.min(1, r.trend / 10)) * 0.5 + 0.5;
+      const score =
+        0.3 * (r.rosProj / mx((x) => x.rosProj)) +
+        0.25 * (r.seasonAvg / mx((x) => x.seasonAvg)) +
+        0.2 * (r.weekProj / mx((x) => x.weekProj)) +
+        0.1 * rankScore + 0.1 * (r.owned / 100) + 0.05 * trendScore -
+        (r.injury === "OUT" || r.injury === "INJURY_RESERVE" ? 0.2 : r.injury ? 0.05 : 0);
+      return { ...r, score: r2(score * 100) };
+    }).sort((a, b) => b.score - a.score);
+    const posCount: Record<string, number> = {};
+    const players: RankedPlayer[] = scored.map((r, i) => {
+      posCount[r.pos] = (posCount[r.pos] ?? 0) + 1;
+      const tier = r.score >= 75 ? "Elite" : r.score >= 60 ? "Starter" : r.score >= 45 ? "Flex" : r.score >= 30 ? "Bench" : "Deep";
+      return { ...r, rank: i + 1, posRank: posCount[r.pos], tier };
+    });
+    return { error: null as string | null, season: year, week, players };
+  });

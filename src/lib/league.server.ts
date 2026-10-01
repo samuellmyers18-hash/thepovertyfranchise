@@ -180,3 +180,41 @@ export async function loadPlayerNames(year: number, ids: number[]): Promise<Reco
     return {};
   }
 }
+
+export type RawPoolPlayer = {
+  onTeamId?: number;
+  player?: {
+    id?: number; fullName?: string; defaultPositionId?: number; proTeamId?: number; injuryStatus?: string;
+    ownership?: { percentOwned?: number; percentChange?: number };
+    draftRanksByRankType?: Record<string, { rank?: number }>;
+    stats?: Array<{ statSourceId?: number; statSplitTypeId?: number; seasonId?: number; scoringPeriodId?: number; appliedTotal?: number; appliedAverage?: number }>;
+  };
+};
+
+export async function fetchPlayerPool(year: number, week: number): Promise<RawPoolPlayer[] | null> {
+  const conn = await getConn();
+  if (!conn?.league_id) return null;
+  const filter = {
+    players: {
+      filterSlotIds: { value: [0, 2, 4, 6, 16, 17] },
+      limit: 400,
+      sortPercOwned: { sortPriority: 1, sortAsc: false },
+      filterStatsForTopScoringPeriodIds: { value: 2, additionalValue: [`00${year}`, `10${year}`, `11${year}${week}`] },
+    },
+  };
+  try {
+    const r = await fetch(`${BASE}/seasons/${year}/segments/0/leagues/${conn.league_id}?view=kona_player_info&scoringPeriodId=${week}`, {
+      headers: {
+        accept: "application/json",
+        cookie: `SWID=${conn.swid}; espn_s2=${conn.espn_s2}`,
+        "x-fantasy-filter": JSON.stringify(filter),
+        "user-agent": "Mozilla/5.0",
+      },
+    });
+    if (!r.ok) return null;
+    const j = (await r.json()) as { players?: RawPoolPlayer[] };
+    return j.players ?? [];
+  } catch {
+    return null;
+  }
+}
