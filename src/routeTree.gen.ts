@@ -13,8 +13,12 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
-import { Route as AuthenticatedManagersRouteImport } from './routes/_authenticated/managers'
+import { Route as AuthenticatedClaimRouteImport } from './routes/_authenticated/claim'
+import { Route as AuthenticatedDraftsRouteImport } from './routes/_authenticated/drafts'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedRivalriesRouteImport } from './routes/_authenticated/rivalries'
+import { Route as AuthenticatedManagersIndexRouteImport } from './routes/_authenticated/managers.index'
+import { Route as AuthenticatedManagersKeyRouteImport } from './routes/_authenticated/managers.$key'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -35,9 +39,14 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedManagersRoute = AuthenticatedManagersRouteImport.update({
-  id: '/managers',
-  path: '/managers',
+const AuthenticatedClaimRoute = AuthenticatedClaimRouteImport.update({
+  id: '/claim',
+  path: '/claim',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDraftsRoute = AuthenticatedDraftsRouteImport.update({
+  id: '/drafts',
+  path: '/drafts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
@@ -45,20 +54,45 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRivalriesRoute = AuthenticatedRivalriesRouteImport.update({
+  id: '/rivalries',
+  path: '/rivalries',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedManagersIndexRoute =
+  AuthenticatedManagersIndexRouteImport.update({
+    id: '/managers/',
+    path: '/managers/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedManagersKeyRoute =
+  AuthenticatedManagersKeyRouteImport.update({
+    id: '/managers/$key',
+    path: '/managers/$key',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
-  '/managers': typeof AuthenticatedManagersRoute
+  '/claim': typeof AuthenticatedClaimRoute
+  '/drafts': typeof AuthenticatedDraftsRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/rivalries': typeof AuthenticatedRivalriesRoute
+  '/managers/$key': typeof AuthenticatedManagersKeyRoute
+  '/managers/': typeof AuthenticatedManagersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
-  '/managers': typeof AuthenticatedManagersRoute
+  '/claim': typeof AuthenticatedClaimRoute
+  '/drafts': typeof AuthenticatedDraftsRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/rivalries': typeof AuthenticatedRivalriesRoute
+  '/managers/$key': typeof AuthenticatedManagersKeyRoute
+  '/managers': typeof AuthenticatedManagersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -66,22 +100,48 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
-  '/_authenticated/managers': typeof AuthenticatedManagersRoute
+  '/_authenticated/claim': typeof AuthenticatedClaimRoute
+  '/_authenticated/drafts': typeof AuthenticatedDraftsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/rivalries': typeof AuthenticatedRivalriesRoute
+  '/_authenticated/managers/$key': typeof AuthenticatedManagersKeyRoute
+  '/_authenticated/managers/': typeof AuthenticatedManagersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/admin' | '/managers' | '/profile'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/admin'
+    | '/claim'
+    | '/drafts'
+    | '/profile'
+    | '/rivalries'
+    | '/managers/$key'
+    | '/managers/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/admin' | '/managers' | '/profile'
+  to:
+    | '/'
+    | '/auth'
+    | '/admin'
+    | '/claim'
+    | '/drafts'
+    | '/profile'
+    | '/rivalries'
+    | '/managers/$key'
+    | '/managers'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/admin'
-    | '/_authenticated/managers'
+    | '/_authenticated/claim'
+    | '/_authenticated/drafts'
     | '/_authenticated/profile'
+    | '/_authenticated/rivalries'
+    | '/_authenticated/managers/$key'
+    | '/_authenticated/managers/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -120,11 +180,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/managers': {
-      id: '/_authenticated/managers'
-      path: '/managers'
-      fullPath: '/managers'
-      preLoaderRoute: typeof AuthenticatedManagersRouteImport
+    '/_authenticated/claim': {
+      id: '/_authenticated/claim'
+      path: '/claim'
+      fullPath: '/claim'
+      preLoaderRoute: typeof AuthenticatedClaimRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/drafts': {
+      id: '/_authenticated/drafts'
+      path: '/drafts'
+      fullPath: '/drafts'
+      preLoaderRoute: typeof AuthenticatedDraftsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/profile': {
@@ -134,19 +201,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/rivalries': {
+      id: '/_authenticated/rivalries'
+      path: '/rivalries'
+      fullPath: '/rivalries'
+      preLoaderRoute: typeof AuthenticatedRivalriesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/managers/': {
+      id: '/_authenticated/managers/'
+      path: '/managers'
+      fullPath: '/managers/'
+      preLoaderRoute: typeof AuthenticatedManagersIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/managers/$key': {
+      id: '/_authenticated/managers/$key'
+      path: '/managers/$key'
+      fullPath: '/managers/$key'
+      preLoaderRoute: typeof AuthenticatedManagersKeyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
-  AuthenticatedManagersRoute: typeof AuthenticatedManagersRoute
+  AuthenticatedClaimRoute: typeof AuthenticatedClaimRoute
+  AuthenticatedDraftsRoute: typeof AuthenticatedDraftsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedRivalriesRoute: typeof AuthenticatedRivalriesRoute
+  AuthenticatedManagersKeyRoute: typeof AuthenticatedManagersKeyRoute
+  AuthenticatedManagersIndexRoute: typeof AuthenticatedManagersIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
-  AuthenticatedManagersRoute: AuthenticatedManagersRoute,
+  AuthenticatedClaimRoute: AuthenticatedClaimRoute,
+  AuthenticatedDraftsRoute: AuthenticatedDraftsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedRivalriesRoute: AuthenticatedRivalriesRoute,
+  AuthenticatedManagersKeyRoute: AuthenticatedManagersKeyRoute,
+  AuthenticatedManagersIndexRoute: AuthenticatedManagersIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

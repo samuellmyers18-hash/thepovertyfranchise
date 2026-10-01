@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { LeagueHome } from "@/components/LeagueHome";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -48,7 +49,7 @@ function Index() {
 
   return (
     <main className="field-grid min-h-screen">
-      <div className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-6 py-16">
+      <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-16">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">Est. league archive</p>
         <h1 className="mt-4 text-6xl leading-none text-foreground sm:text-8xl">
           The Poverty
@@ -63,7 +64,7 @@ function Index() {
           {signedIn ? (
             <>
               <Button asChild size="lg">
-                <Link to="/managers">Claim your manager</Link>
+                <Link to="/claim">Claim your manager</Link>
               </Button>
               {isAdmin && (
                 <Button asChild size="lg">
@@ -81,18 +82,7 @@ function Index() {
           )}
         </div>
 
-        <div className="mt-16 grid gap-4 border-t border-border pt-8 sm:grid-cols-3">
-          {[
-            ["Power rankings", "Coming next"],
-            ["Team history & records", "Coming next"],
-            ["Rivalries by matchup", "Coming next"],
-          ].map(([title, note]) => (
-            <div key={title}>
-              <h3 className="text-xl text-foreground">{title}</h3>
-              <p className="text-sm text-muted-foreground">{note}</p>
-            </div>
-          ))}
-        </div>
+        {signedIn && <LeagueHome />}
       </div>
     </main>
   );
