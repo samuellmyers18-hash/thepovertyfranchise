@@ -349,9 +349,16 @@ export const getNewsletter = createServerFn({ method: "POST" })
       allPlay.at(-1) ? `${allPlay.at(-1)!.managers} would have lost to every single team this week. Every. Single. One.` : null,
       leaders[0] ? `${leaders[0].managers} leads the league at ${leaders[0].avg.toFixed(1)} per week. Pay respects.` : null,
     ].filter((x): x is string => !!x);
+    const H = await import("./hottake.server");
+    const hotTake = H.makeHotTake({
+      scores: scores.map((x) => ({ team: x.s.team, managers: x.s.managers, pts: x.s.pts, oppPts: x.o.pts })),
+      standings: standings.map((r) => ({ team: r.team, managers: r.managers, w: r.w, l: r.l })),
+      allPlay: allPlay.map((x) => ({ team: x.team, managers: x.managers, w: x.w, l: x.l })),
+    });
     const issue = {
       volume: years.indexOf(s.seasonId ?? 0) >= 0 ? s.seasonId! - Math.min(...years) + 1 : 1,
       lead,
+      hotTake,
       stories: stories.slice(1),
       topScorer: { team: best.s.team, who: best.s.managers, pts: best.s.pts },
       bust: { team: worst.s.team, who: worst.s.managers, pts: worst.s.pts },

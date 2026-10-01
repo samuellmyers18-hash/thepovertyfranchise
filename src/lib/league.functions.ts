@@ -357,7 +357,31 @@ export const getLeagueHome = createServerFn({ method: "POST" })
         return { kind: t.type === "WAIVER" ? ("Waiver" as const) : ("Free agent" as const), date, team: who.team, managers: who.managers, players: parts, bid: t.type === "WAIVER" ? (t.bidAmount ?? null) : null };
       });
 
-    return { error, season: cur.seasonId ?? null, week: currentWeek, standings, power, facts, trend, topScores, pointsLeaders, matchups, featured, moves };
+    // Weekly hot take.
+    const H = await import("./hottake.server");
+    const weekScores = matchups.flatMap((m) => [
+      { team: m.homeTeam, managers: m.homeManagers.join(" & "), pts: m.homePts, oppPts: m.awayPts },
+      { team: m.awayTeam, managers: m.awayManagers.join(" & "), pts: m.awayPts, oppPts: m.homePts },
+    ]);
+    const apRows = power.map((p) => {
+      const [w, l] = p.allPlay.split("-").map(Number);
+      return { team: p.team, managers: p.managers, w: w ?? 0, l: l ?? 0 };
+    });
+    let hotTake = H.makeHotTake({
+      scores: weekScores,
+      standings: standings.map((s) => ({ team: s.team, managers: s.managers, w: s.wins, l: s.losses })),
+      allPlay: apRows,
+    });
+    if (!hotTake && power.length) {
+      const t = power[0]!;
+      hotTake = {
+        headline: `${t.team} sits on the throne`,
+        body: `Week ${currentWeek} hasn't kicked off yet, but ${t.managers} holds the #1 power ranking. Everyone else is playing catch-up.`,
+        managers: t.managers, team: t.team,
+      };
+    }
+
+    return { error, season: cur.seasonId ?? null, week: currentWeek, standings, power, facts, trend, topScores, pointsLeaders, matchups, featured, moves, hotTake };
   });
 
 // ---------- Rivalries ----------
