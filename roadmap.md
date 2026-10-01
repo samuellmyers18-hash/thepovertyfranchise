@@ -16,3 +16,4 @@
 - [ ] Home page: creative fun facts (charts/visuals), more sections
 - [ ] Weekly matchups section + featured matchup on home
 - [ ] Manager names clickable everywhere -> profile
+- [ ] Home: recent moves (pickups, waivers, trades)

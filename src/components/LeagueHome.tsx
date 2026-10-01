@@ -87,6 +87,23 @@ export function LeagueHome() {
         {data.season} season · through week {data.week}
       </p>
 
+      {data.featured && (
+        <section>
+          <h2 className="mb-4 flex items-center gap-2 text-4xl text-foreground"><Star className="h-7 w-7 text-primary" /> Featured matchup</h2>
+          <p className="mb-4 text-sm text-muted-foreground">Week {data.week}'s highest-scoring battle.</p>
+          <MatchupCard m={data.featured} big />
+        </section>
+      )}
+
+      {data.matchups.length > 0 && (
+        <section>
+          <h2 className="mb-4 flex items-center gap-2 text-4xl text-foreground"><CalendarDays className="h-7 w-7 text-primary" /> Week {data.week} matchups</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {data.matchups.map((m, i) => <MatchupCard key={i} m={m} />)}
+          </div>
+        </section>
+      )}
+
       {heroFact && (
         <section className="relative overflow-hidden rounded-lg border border-primary/40 bg-gradient-to-br from-primary/15 via-card to-card p-8">
           <Flame className="absolute -right-6 -top-6 h-40 w-40 text-primary/10" />
