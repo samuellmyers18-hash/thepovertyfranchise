@@ -135,7 +135,7 @@ export const getLeagueHome = createServerFn({ method: "POST" })
     if (!seasons.length) return { error: error ?? "No data yet.", season: null, week: 0, standings: [], power: [], facts: [] };
 
     // Use the newest season with completed games.
-    const cur = seasons.find((s) => (s.schedule ?? []).some(done)) ?? seasons[0];
+    const cur: RawSeason = seasons.find((s) => (s.schedule ?? []).some(done)) ?? seasons[0]!;
     const teams = cur.teams ?? [];
     const label = (t: RawTeam) => ({ team: L.teamName(t), managers: L.teamManagers(cur, t).join(" & ") });
     const games = (cur.schedule ?? []).filter((m) => done(m) && regular(m));
@@ -248,7 +248,7 @@ export const getRivalries = createServerFn({ method: "POST" })
         const am = byId.get(m.away.teamId) ?? [];
         for (const h of hm) for (const a of am) {
           if (h === a) continue;
-          const [x, y] = [h, a].sort();
+          const [x, y] = (h < a ? [h, a] : [a, h]) as [string, string];
           const flip = x !== h;
           const xp = flip ? m.away.totalPoints ?? 0 : m.home.totalPoints ?? 0;
           const yp = flip ? m.home.totalPoints ?? 0 : m.away.totalPoints ?? 0;

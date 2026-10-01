@@ -12,3 +12,4 @@
 - [ ] Home: standings, power rankings, fun facts (weekly live)
 - [ ] Rivalries page
 - [ ] Draft recaps page
+- [ ] Separate Claim page; Managers list links to public manager profiles with fun facts
