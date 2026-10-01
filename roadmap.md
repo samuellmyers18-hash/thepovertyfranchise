@@ -21,3 +21,4 @@
 - [ ] Home matchups/featured: current week w/ projections; separate past-matchups page
 - [ ] Power rankings: factor in current roster projections
 - [ ] Admin settings: edit manager names (incl. past managers), not old teams
+- [ ] Rosters: real lineup order QB,RB,RB,WR,WR,WR/TE,FLEX,D/ST,K,bench
