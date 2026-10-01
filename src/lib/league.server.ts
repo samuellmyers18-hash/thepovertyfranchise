@@ -103,6 +103,29 @@ async function fetchSeason(leagueId: string, year: number, cookie: string): Prom
   return null;
 }
 
+export type RawRosterEntry = { playerId?: number; lineupSlotId?: number; acquisitionDate?: number; acquisitionType?: string };
+export type RawRosterTeam = { id?: number; roster?: { entries?: RawRosterEntry[] } };
+
+/** Fetches every team's roster for one scoring period (week) of a season. */
+export async function fetchRosterWeek(year: number, week: number): Promise<RawRosterTeam[] | null> {
+  const conn = await getConn();
+  if (!conn?.league_id) return null;
+  const headers = { accept: "application/json", cookie: `SWID=${conn.swid}; espn_s2=${conn.espn_s2}`, "user-agent": "Mozilla/5.0" };
+  const q = `view=mRoster&scoringPeriodId=${week}`;
+  try {
+    const r = await fetch(`${BASE}/seasons/${year}/segments/0/leagues/${conn.league_id}?${q}`, { headers });
+    if (r.ok) return ((await r.json()) as { teams?: RawRosterTeam[] }).teams ?? [];
+    const h = await fetch(`${BASE}/leagueHistory/${conn.league_id}?seasonId=${year}&${q}`, { headers });
+    if (h.ok) {
+      const arr = (await h.json()) as Array<{ teams?: RawRosterTeam[] }>;
+      return (Array.isArray(arr) ? arr[0]?.teams : null) ?? [];
+    }
+  } catch (e) {
+    console.error("espn roster fetch", year, week, e);
+  }
+  return null;
+}
+
 export async function loadAllSeasons(): Promise<{ seasons: RawSeason[]; error?: string }> {
   const conn = await getConn();
   if (!conn?.league_id) return { seasons: [], error: "The league isn't connected to ESPN yet." };
