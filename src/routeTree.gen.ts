@@ -17,6 +17,7 @@ import { Route as AuthenticatedClaimRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedDraftsRouteImport } from './routes/_authenticated/drafts'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedRivalriesRouteImport } from './routes/_authenticated/rivalries'
+import { Route as AuthenticatedRostersRouteImport } from './routes/_authenticated/rosters'
 import { Route as AuthenticatedManagersIndexRouteImport } from './routes/_authenticated/managers.index'
 import { Route as AuthenticatedManagersKeyRouteImport } from './routes/_authenticated/managers.$key'
 
@@ -59,6 +60,11 @@ const AuthenticatedRivalriesRoute = AuthenticatedRivalriesRouteImport.update({
   path: '/rivalries',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRostersRoute = AuthenticatedRostersRouteImport.update({
+  id: '/rosters',
+  path: '/rosters',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedManagersIndexRoute =
   AuthenticatedManagersIndexRouteImport.update({
     id: '/managers/',
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/drafts': typeof AuthenticatedDraftsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/rivalries': typeof AuthenticatedRivalriesRoute
+  '/rosters': typeof AuthenticatedRostersRoute
   '/managers/$key': typeof AuthenticatedManagersKeyRoute
   '/managers/': typeof AuthenticatedManagersIndexRoute
 }
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/drafts': typeof AuthenticatedDraftsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/rivalries': typeof AuthenticatedRivalriesRoute
+  '/rosters': typeof AuthenticatedRostersRoute
   '/managers/$key': typeof AuthenticatedManagersKeyRoute
   '/managers': typeof AuthenticatedManagersIndexRoute
 }
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/_authenticated/drafts': typeof AuthenticatedDraftsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/rivalries': typeof AuthenticatedRivalriesRoute
+  '/_authenticated/rosters': typeof AuthenticatedRostersRoute
   '/_authenticated/managers/$key': typeof AuthenticatedManagersKeyRoute
   '/_authenticated/managers/': typeof AuthenticatedManagersIndexRoute
 }
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/drafts'
     | '/profile'
     | '/rivalries'
+    | '/rosters'
     | '/managers/$key'
     | '/managers/'
   fileRoutesByTo: FileRoutesByTo
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/drafts'
     | '/profile'
     | '/rivalries'
+    | '/rosters'
     | '/managers/$key'
     | '/managers'
   id:
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/_authenticated/drafts'
     | '/_authenticated/profile'
     | '/_authenticated/rivalries'
+    | '/_authenticated/rosters'
     | '/_authenticated/managers/$key'
     | '/_authenticated/managers/'
   fileRoutesById: FileRoutesById
@@ -208,6 +220,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRivalriesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/rosters': {
+      id: '/_authenticated/rosters'
+      path: '/rosters'
+      fullPath: '/rosters'
+      preLoaderRoute: typeof AuthenticatedRostersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/managers/': {
       id: '/_authenticated/managers/'
       path: '/managers'
@@ -231,6 +250,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDraftsRoute: typeof AuthenticatedDraftsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRivalriesRoute: typeof AuthenticatedRivalriesRoute
+  AuthenticatedRostersRoute: typeof AuthenticatedRostersRoute
   AuthenticatedManagersKeyRoute: typeof AuthenticatedManagersKeyRoute
   AuthenticatedManagersIndexRoute: typeof AuthenticatedManagersIndexRoute
 }
@@ -241,6 +261,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDraftsRoute: AuthenticatedDraftsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRivalriesRoute: AuthenticatedRivalriesRoute,
+  AuthenticatedRostersRoute: AuthenticatedRostersRoute,
   AuthenticatedManagersKeyRoute: AuthenticatedManagersKeyRoute,
   AuthenticatedManagersIndexRoute: AuthenticatedManagersIndexRoute,
 }
