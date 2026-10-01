@@ -427,7 +427,7 @@ const slotLabel = (id?: number) => SLOT_LABELS[id ?? -1] ?? `Slot ${id ?? "?"}`;
 // Real lineup order: QB, RB, RB, WR, WR, WR/TE, TE, FLEX, D/ST, K, Bench, IR.
 const SLOT_ORDER: Record<number, number> = { 0: 1, 2: 2, 25: 2, 4: 3, 5: 4, 6: 5, 23: 6, 16: 7, 17: 8, 20: 9, 21: 10 };
 
-export type RosterPlayer = { name: string; slot: string; slotId?: number; acquired: string | null };
+export type RosterPlayer = { name: string; slot: string; slotId: number | undefined; acquired: string | null };
 export type RosterTeam = { teamId: number; team: string; managers: string[]; players: RosterPlayer[] };
 
 export const getRosters = createServerFn({ method: "POST" })

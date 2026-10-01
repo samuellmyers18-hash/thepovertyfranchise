@@ -154,7 +154,7 @@ async function applyManagerNames(seasons: RawSeason[]) {
       for (const m of s.members ?? []) {
         const raw = ([m.firstName, m.lastName].filter(Boolean).join(" ") || m.displayName || "").trim();
         const nice = overrides.get(managerKey(raw));
-        if (nice) { m.firstName = nice; m.lastName = undefined; }
+        if (nice) { m.firstName = nice; m.lastName = ""; }
       }
     }
   } catch { /* overrides are optional */ }
