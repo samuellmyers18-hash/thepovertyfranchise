@@ -1,5 +1,8 @@
 import type { ManagerSummary } from "@/lib/league.functions";
 import { Card, CardContent } from "@/components/ui/card";
+import { Link } from "@tanstack/react-router";
+
+const mKey = (n: string) => n.trim().toLowerCase().replace(/\s+/g, " ");
 
 export function ManagerStats({ m }: { m: ManagerSummary }) {
   const games = m.wins + m.losses + m.ties;
@@ -34,7 +37,16 @@ export function ManagerStats({ m }: { m: ManagerSummary }) {
                 <td className="px-3 py-2">{s.season}</td>
                 <td className="px-3 py-2">
                   {s.teamName}
-                  {s.coManagers.length > 0 && <span className="block text-xs text-muted-foreground">with {s.coManagers.join(", ")}</span>}
+                  {s.coManagers.length > 0 && (
+                    <span className="block text-xs text-muted-foreground">
+                      with {s.coManagers.map((n, i) => (
+                        <span key={n}>
+                          {i > 0 && ", "}
+                          <Link to="/managers/$key" params={{ key: mKey(n) }} className="hover:text-primary hover:underline">{n}</Link>
+                        </span>
+                      ))}
+                    </span>
+                  )}
                 </td>
                 <td className="px-3 py-2">{s.wins}-{s.losses}{s.ties ? `-${s.ties}` : ""}</td>
                 <td className="px-3 py-2">{s.pointsFor.toFixed(1)}</td>
