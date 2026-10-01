@@ -95,6 +95,16 @@ async function fetchLeague(leagueId: string, swid: string, espnS2: string) {
     ok: true as const,
     displayName: me ? (me.displayName ?? [me.firstName, me.lastName].filter(Boolean).join(" ")) : null,
     leagues: [league],
+    teams: (json.teams ?? [])
+      .filter((t) => typeof t.id === "number")
+      .map((t) => {
+        const owner = json.members?.find((m) => t.owners?.includes(m.id ?? ""));
+        return {
+          id: t.id as number,
+          espnName: t.name ?? `${t.location ?? ""} ${t.nickname ?? ""}`.trim() || `Team ${t.id}`,
+          ownerName: owner ? [owner.firstName, owner.lastName].filter(Boolean).join(" ") || owner.displayName || null : null,
+        };
+      }),
   };
 }
 
