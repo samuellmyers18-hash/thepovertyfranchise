@@ -47,7 +47,7 @@ function Index() {
   }
 
   return (
-    <main className="field-grid min-h-screen bg-background">
+    <main className="field-grid min-h-screen">
       <div className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-6 py-16">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">Est. league archive</p>
         <h1 className="mt-4 text-6xl leading-none text-foreground sm:text-8xl">
@@ -62,6 +62,9 @@ function Index() {
         <div className="mt-10 flex flex-wrap gap-3">
           {signedIn ? (
             <>
+              <Button asChild size="lg">
+                <Link to="/managers">Claim your manager</Link>
+              </Button>
               {isAdmin && (
                 <Button asChild size="lg">
                   <Link to="/admin">Admin settings</Link>

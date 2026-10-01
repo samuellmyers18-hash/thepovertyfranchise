@@ -47,6 +47,27 @@ export type Database = {
         }
         Relationships: []
       }
+      manager_claims: {
+        Row: {
+          created_at: string
+          manager_key: string
+          manager_name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          manager_key: string
+          manager_name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          manager_key?: string
+          manager_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
