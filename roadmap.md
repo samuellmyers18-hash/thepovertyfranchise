@@ -7,3 +7,5 @@
 - [ ] Manager claiming
 - [ ] Power rankings, team views, team history, records, year filters, rivalries
 - [ ] Player rankings model (consensus + league history)
+- [x] Sidebar menu
+- [x] Claim manager + profile with ESPN stats (incl. past leaguemates)
