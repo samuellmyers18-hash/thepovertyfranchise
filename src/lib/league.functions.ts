@@ -195,14 +195,39 @@ export const getLeagueHome = createServerFn({ method: "POST" })
       return { s, apRate: apG ? apW / apG : 0, apW, apL: apG - apW, winRate: g ? (s.wins + s.ties / 2) / g : 0, recentAvg };
     });
     const maxRecent = Math.max(1, ...raw.map((r) => r.recentAvg));
+    // Rest-of-season projection of each team's best possible starting lineup.
+    const rosByTeam = new Map<number, number>();
+    try {
+      const pool = await L.fetchPlayerPool(cur.seasonId ?? 0, cur.status?.latestScoringPeriod ?? curWeekNum);
+      const byTeam = new Map<number, { pos: number; ros: number }[]>();
+      for (const e of pool ?? []) {
+        const p = e.player; if (!e.onTeamId || !p) continue;
+        const st = p.stats ?? [];
+        const proj = st.find((x) => x.statSourceId === 1 && x.statSplitTypeId === 0 && x.seasonId === cur.seasonId)?.appliedTotal ?? 0;
+        const act = st.find((x) => x.statSourceId === 0 && x.statSplitTypeId === 0 && x.seasonId === cur.seasonId)?.appliedTotal ?? 0;
+        byTeam.set(e.onTeamId, [...(byTeam.get(e.onTeamId) ?? []), { pos: p.defaultPositionId ?? 0, ros: Math.max(0, proj - act) }]);
+      }
+      for (const [tid, list] of byTeam) {
+        const left = [...list].sort((a, b) => b.ros - a.ros);
+        let total = 0;
+        const take = (ok: (pos: number) => boolean, n: number) => { for (let i = 0; i < n; i++) { const j = left.findIndex((x) => ok(x.pos)); if (j < 0) return; total += left[j]!.ros; left.splice(j, 1); } };
+        take((x) => x === 1, 1); take((x) => x === 2, 2); take((x) => x === 3, 2); take((x) => x === 4, 1);
+        take((x) => x === 3 || x === 4, 1); take((x) => x === 2 || x === 3 || x === 4, 1); take((x) => x === 16, 1); take((x) => x === 5, 1);
+        rosByTeam.set(tid, total);
+      }
+    } catch { /* projections optional */ }
+    const maxRos = Math.max(1, ...rosByTeam.values());
     const power: PowerRow[] = raw
       .map((r) => {
         const proj = projByTeam.get(r.s.teamId) ?? 0;
         const projRate = proj / maxProj;
-        const score = 0.3 * r.apRate + 0.25 * r.winRate + 0.25 * (r.recentAvg / maxRecent) + 0.2 * projRate;
+        const ros = rosByTeam.get(r.s.teamId) ?? 0;
+        const score = rosByTeam.size
+          ? 0.25 * r.apRate + 0.2 * r.winRate + 0.2 * (r.recentAvg / maxRecent) + 0.15 * projRate + 0.2 * (ros / maxRos)
+          : 0.3 * r.apRate + 0.25 * r.winRate + 0.25 * (r.recentAvg / maxRecent) + 0.2 * projRate;
         const luck = r.winRate - r.apRate;
-        const note = proj === maxProj && proj > 0 ? "Best roster this week" : luck > 0.12 ? "Riding some luck" : luck < -0.12 ? "Better than the record" : r.recentAvg === maxRecent ? "Hottest offense" : "";
-        return { ...r.s, rank: 0, score: Math.round(score * 1000) / 10, allPlay: `${Math.round(r.apW)}-${Math.round(r.apL)}`, recentAvg: r2(r.recentAvg), proj: r2(proj), note };
+        const note = ros === maxRos && ros > 0 ? "Best rest-of-season roster" : proj === maxProj && proj > 0 ? "Best roster this week" : luck > 0.12 ? "Riding some luck" : luck < -0.12 ? "Better than the record" : r.recentAvg === maxRecent ? "Hottest offense" : "";
+        return { ...r.s, rank: 0, score: Math.round(score * 1000) / 10, allPlay: `${Math.round(r.apW)}-${Math.round(r.apL)}`, recentAvg: r2(r.recentAvg), proj: r2(proj), ros: Math.round(ros), note };
       })
       .sort((a, b) => b.score - a.score)
       .map((p, i) => ({ ...p, rank: i + 1 }));
