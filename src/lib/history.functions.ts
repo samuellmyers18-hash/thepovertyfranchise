@@ -83,6 +83,48 @@ export const getRecords = createServerFn({ method: "POST" })
     const gm = (g: Game, v: string): RecordEntry => { const [w, l] = winLose(g); return { value: v, who: w.managers, team: w.team, detail: `${w.pts.toFixed(2)}–${l.pts.toFixed(2)} over ${l.managers} · ${label(g)}`, season: g.season }; };
     const ts = (t: (typeof teamSeasons)[number], v: string): RecordEntry => ({ value: v, who: t.managers, team: t.team, detail: `${t.season} (${t.w}-${t.l})`, season: t.season });
 
+    // Transaction-based records
+    type Tx = { season: number; team: string; managers: string; pickups: number; trades: number; faab: number; topBid: number };
+    const txSeasons: Tx[] = [];
+    const bids: RecordEntry[] = [];
+    for (const s of seasons) {
+      const byId = new Map((s.teams ?? []).map((t) => [t.id, t]));
+      const agg = new Map<number, Tx>();
+      for (const t of s.transactions ?? []) {
+        if (t.status !== "EXECUTED" || t.teamId == null) continue;
+        const team = byId.get(t.teamId); if (!team) continue;
+        const a = agg.get(t.teamId) ?? { season: s.seasonId ?? 0, team: L.teamName(team), managers: L.teamManagers(s, team).join(" & "), pickups: 0, trades: 0, faab: 0, topBid: 0 };
+        if (t.type === "WAIVER" || t.type === "FREEAGENT") { a.pickups++; a.faab += t.bidAmount ?? 0; }
+        if (t.type === "TRADE") a.trades++;
+        if ((t.bidAmount ?? 0) > 0) bids.push({ value: `$${t.bidAmount}`, who: a.managers, team: a.team, detail: `${s.seasonId} waiver claim`, season: s.seasonId ?? 0 });
+        agg.set(t.teamId, a);
+      }
+      txSeasons.push(...agg.values());
+    }
+    const mgrTx = new Map<string, { p: number; t: number; f: number }>();
+    for (const x of txSeasons) for (const n of x.managers.split(" & ")) { const c = mgrTx.get(n) ?? { p: 0, t: 0, f: 0 }; c.p += x.pickups; c.t += x.trades; c.f += x.faab; mgrTx.set(n, c); }
+    const txE = (x: Tx, v: string): RecordEntry => ({ value: v, who: x.managers, team: x.team, detail: `${x.season} season`, season: x.season });
+    // Playoff appearances & weekly top scores
+    const playoffApps = new Map<string, number[]>();
+    for (const t of teamSeasons) if (t.rank > 0 && t.rank <= 4) for (const n of t.managers.split(" & ")) playoffApps.set(n, [...(playoffApps.get(n) ?? []), t.season]);
+    const weekTop = new Map<string, { n: number; team: string; season: number }>();
+    for (const s of seasons) {
+      const wk = new Map<number, Side[]>();
+      for (const g of games(L, s)) if (!g.playoff) wk.set(g.week, [...(wk.get(g.week) ?? []), g.home, g.away]);
+      for (const list of wk.values()) { const b = [...list].sort((a, c) => c.pts - a.pts)[0]; if (!b) continue; const k = `${s.seasonId}|${b.managers}`; const c = weekTop.get(k) ?? { n: 0, team: b.team, season: s.seasonId ?? 0 }; c.n++; weekTop.set(k, c); }
+    }
+    const transactionCats: RecordCat[] = [
+      { title: "Most pickups in a season", blurb: "Waiver claims and free-agent adds.", entries: top(txSeasons, (x) => x.pickups).filter((x) => x.pickups > 0).map((x) => txE(x, String(x.pickups))) },
+      { title: "Most pickups, career", blurb: "Lifetime waiver-wire grinders.", entries: top([...mgrTx], ([, c]) => c.p).filter(([, c]) => c.p > 0).map(([n, c]) => ({ value: String(c.p), who: n, detail: "all seasons", season: 0 })) },
+      { title: "Most trades in a season", blurb: "Can't stop dealing.", entries: top(txSeasons, (x) => x.trades).filter((x) => x.trades > 0).map((x) => txE(x, String(x.trades))) },
+      { title: "Most trades, career", blurb: "League's busiest GMs.", entries: top([...mgrTx], ([, c]) => c.t).filter(([, c]) => c.t > 0).map(([n, c]) => ({ value: String(c.t), who: n, detail: "all seasons", season: 0 })) },
+      { title: "Biggest waiver bids", blurb: "Emptied the FAAB wallet.", entries: top(bids, (x) => Number(x.value.slice(1))) },
+      { title: "Most FAAB spent in a season", blurb: "Big spenders.", entries: top(txSeasons, (x) => x.faab).filter((x) => x.faab > 0).map((x) => txE(x, `$${x.faab}`)) },
+      { title: "Fewest pickups in a season", blurb: "Set it and forget it.", entries: top(txSeasons, (x) => -x.pickups).map((x) => txE(x, String(x.pickups))) },
+      { title: "Most weekly high scores, season", blurb: "Top score of the week, most often.", entries: top([...weekTop], ([, c]) => c.n).map(([k, c]) => ({ value: `${c.n}×`, who: k.split("|")[1]!, team: c.team, detail: `${c.season} season`, season: c.season })) },
+      { title: "Most top-4 finishes", blurb: "Always in the mix.", entries: top([...playoffApps], ([, y]) => y.length).map(([n, y]) => ({ value: `${y.length}×`, who: n, detail: y.sort().join(", "), season: 0 })) },
+    ];
+
     const cats: RecordCat[] = [
       { title: "Highest single week", blurb: "The biggest one-week explosions ever.", entries: top(scores, (x) => x.s.pts).map(sc) },
       { title: "Lowest single week", blurb: "Weeks best forgotten.", entries: top(scores, (x) => -x.s.pts).map(sc) },
@@ -99,7 +141,8 @@ export const getRecords = createServerFn({ method: "POST" })
       { title: "Longest win streaks", blurb: "Consecutive wins, across seasons.", entries: top(streaks, (x) => parseInt(x.value)) },
       { title: "Longest losing streaks", blurb: "Consecutive losses, across seasons.", entries: top(lossStreaks, (x) => parseInt(x.value)) },
       { title: "Most championships", blurb: "Hardware.", entries: top([...titles], ([, y]) => y.length).map(([n, y]) => ({ value: `${y.length}×`, who: n, detail: y.sort().join(", "), season: y[0] ?? 0 })) },
-    ];
+      ...transactionCats,
+    ].filter((c) => c.entries.length > 0);
     return { error: null as string | null, cats };
   });
 
