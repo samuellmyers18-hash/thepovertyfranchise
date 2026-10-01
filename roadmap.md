@@ -13,4 +13,4 @@
 - [x] Power rankings: add rest-of-season roster projections
 - [x] Records: add waiver/pickup, trade and other non-game records
 
-- [ ] Fix visual bug on Poverty Post: Lee Jennings vs Samuel Myers story
+- [x] Fix visual bug on Poverty Post: Lee Jennings vs Samuel Myers story
