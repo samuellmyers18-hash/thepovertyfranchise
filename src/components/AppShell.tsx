@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Home, Users, User, Swords, ListOrdered, BadgeCheck, Settings, LogOut, LogIn, Menu, X, ClipboardList, CalendarDays } from "lucide-react";
+import { Home, Users, User, Swords, ListOrdered, BadgeCheck, Settings, LogOut, LogIn, Menu, X, ClipboardList, CalendarDays, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export function AppShell({ children }: { children: ReactNode }) {
