@@ -129,7 +129,7 @@ export type FunFact = { title: string; value: string; detail: string };
 export type WeekPoint = { week: number; avg: number; high: number; highWho: string };
 export type TopScore = { who: string; pts: number; season: number; week: number };
 export type PointsLeader = { name: string; pts: number; seasons: number };
-export type MatchupRow = { homeTeam: string; awayTeam: string; homeManagers: string[]; awayManagers: string[]; homePts: number; awayPts: number; homeProj?: number | null; awayProj?: number | null };
+export type MatchupRow = { homeTeam: string; awayTeam: string; homeManagers: string[]; awayManagers: string[]; homePts: number; awayPts: number; homeProj?: number | null; awayProj?: number | null; prediction?: import("./predict.server").Prediction | null };
 export type MoveRow = { kind: "Waiver" | "Free agent" | "Trade"; date: string; team: string; managers: string[]; players: string; bid: number | null };
 
 export const getLeagueHome = createServerFn({ method: "POST" })
@@ -294,7 +294,9 @@ export const getLeagueHome = createServerFn({ method: "POST" })
     // Current week's matchups (live or upcoming); featured = highest combined score/projection.
     const currentWeek = cur.status?.currentMatchupPeriod ?? lastWeek;
     const matchups: MatchupRow[] = [];
-    for (const g of games) {
+    const P = await import("./predict.server");
+    const CUR = cur;
+    for (const g of (cur.schedule ?? []).filter((m) => regular(m) && m.matchupPeriodId === currentWeek)) {
       if (g.home?.teamId == null || g.away?.teamId == null) continue;
       const ht = teams.find((t) => t.id === g.home!.teamId);
       const at = teams.find((t) => t.id === g.away!.teamId);
@@ -307,6 +309,7 @@ export const getLeagueHome = createServerFn({ method: "POST" })
           homePts: r2(wk.homePts), awayPts: r2(wk.awayPts),
           homeProj: g.home!.totalProjectedPointsLive != null ? r2(g.home!.totalProjectedPointsLive) : null,
           awayProj: g.away!.totalProjectedPointsLive != null ? r2(g.away!.totalProjectedPointsLive) : null,
+          prediction: done(g) ? null : P.predictGame(seasons, CUR, g.home!.teamId!, g.away!.teamId!, wk.period, g.home!.totalProjectedPointsLive, g.away!.totalProjectedPointsLive),
         });
       }
     }
@@ -517,6 +520,8 @@ export const getMatchups = createServerFn({ method: "POST" })
     const week = data.week && data.week >= 1 && data.week <= periodCount ? data.week : latest;
     const teams = s.teams ?? [];
     const matchups: MatchupRow[] = [];
+    const P = await import("./predict.server");
+    const CUR = s;
     for (const g of s.schedule ?? []) {
       if (g.home?.teamId == null || g.away?.teamId == null) continue;
       const ht = teams.find((t) => t.id === g.home!.teamId);
@@ -530,6 +535,7 @@ export const getMatchups = createServerFn({ method: "POST" })
           homePts: r2(wk.homePts), awayPts: r2(wk.awayPts),
           homeProj: g.home!.totalProjectedPointsLive != null ? r2(g.home!.totalProjectedPointsLive) : null,
           awayProj: g.away!.totalProjectedPointsLive != null ? r2(g.away!.totalProjectedPointsLive) : null,
+          prediction: done(g) ? null : P.predictGame(seasons, CUR, g.home!.teamId!, g.away!.teamId!, wk.period, g.home!.totalProjectedPointsLive, g.away!.totalProjectedPointsLive),
         });
       }
     }

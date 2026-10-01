@@ -323,13 +323,14 @@ export const getNewsletter = createServerFn({ method: "POST" })
     const nextWeek = week + 1;
     const byId = new Map((s.teams ?? []).map((t) => [t.id, t]));
     const recOf = (id: number) => rec.get(id);
+    const P = await import("./predict.server");
     const preview = (s.schedule ?? []).filter((m) => m.matchupPeriodId === nextWeek && m.home?.teamId != null && m.away?.teamId != null).map((m) => {
       const h = byId.get(m.home!.teamId)!, a = byId.get(m.away!.teamId)!;
       const hm = L.teamManagers(s, h).join(" & "), am = L.teamManagers(s, a).join(" & ");
       const hr = recOf(h.id ?? 0), ar = recOf(a.id ?? 0);
       const hh = h2h(hm, am);
       const ha = leaders.find((x) => x.managers === hm)?.avg ?? 0, aa = leaders.find((x) => x.managers === am)?.avg ?? 0;
-      return { home: { team: L.teamName(h), managers: hm, rec: hr ? `${hr.w}-${hr.l}` : "0-0", avg: ha }, away: { team: L.teamName(a), managers: am, rec: ar ? `${ar.w}-${ar.l}` : "0-0", avg: aa }, h2h: hh, pick: ha >= aa ? hm : am };
+      return { home: { team: L.teamName(h), managers: hm, rec: hr ? `${hr.w}-${hr.l}` : "0-0", avg: ha }, away: { team: L.teamName(a), managers: am, rec: ar ? `${ar.w}-${ar.l}` : "0-0", avg: aa }, h2h: hh, pick: ha >= aa ? hm : am, prediction: P.predictGame(seasons, s, h.id ?? 0, a.id ?? 0, nextWeek, m.home?.totalProjectedPointsLive, m.away?.totalProjectedPointsLive) };
     });
     const combined = [...wk].sort((a, b) => b.home.pts + b.away.pts - (a.home.pts + a.away.pts));
     const margins = [...wk].sort((a, b) => Math.abs(a.home.pts - a.away.pts) - Math.abs(b.home.pts - b.away.pts));
