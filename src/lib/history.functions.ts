@@ -299,7 +299,9 @@ export const getNewsletter = createServerFn({ method: "POST" })
     const standings = [...rec.values()].sort((a, b) => b.w - a.w || b.pf - a.pf).map((r) => ({ ...r, pf: r2(r.pf) }));
     const unluckiest = [...scores].filter((x) => x.s.pts < x.o.pts).sort((a, b) => b.s.pts - a.s.pts)[0];
     const luckiest = [...scores].filter((x) => x.s.pts > x.o.pts).sort((a, b) => a.s.pts - b.s.pts)[0];
-    const moves = (s.transactions ?? []).filter((t) => t.status === "EXECUTED").length;
+    const movesFromList = (s.transactions ?? []).filter((t) => t.status === "EXECUTED").length;
+    const movesFromCounter = (s.teams ?? []).reduce((n, t) => n + (t.transactionCounter?.acquisitions ?? 0) + (t.transactionCounter?.trades ?? 0), 0);
+    const moves = Math.max(movesFromList, movesFromCounter);
     const allGames = seasons.flatMap((x) => games(L, x));
     const h2h = (a: string, b: string) => {
       let aw = 0, bw = 0;
