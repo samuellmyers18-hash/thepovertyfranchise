@@ -99,6 +99,16 @@ export const getRecords = createServerFn({ method: "POST" })
         if ((t.bidAmount ?? 0) > 0) bids.push({ value: `$${t.bidAmount}`, who: a.managers, team: a.team, detail: `${s.seasonId} waiver claim`, season: s.seasonId ?? 0 });
         agg.set(t.teamId, a);
       }
+      // ESPN's per-team counter covers every season (the transaction list only
+      // covers the current one), so prefer it for pickup/trade totals.
+      for (const team of s.teams ?? []) {
+        const tc = team.transactionCounter;
+        if (!tc || team.id == null) continue;
+        const a = agg.get(team.id) ?? { season: s.seasonId ?? 0, team: L.teamName(team), managers: L.teamManagers(s, team).join(" & "), pickups: 0, trades: 0, faab: 0, topBid: 0 };
+        a.pickups = tc.acquisitions ?? a.pickups;
+        a.trades = tc.trades ?? a.trades;
+        agg.set(team.id, a);
+      }
       txSeasons.push(...agg.values());
     }
     const mgrTx = new Map<string, { p: number; t: number; f: number }>();
@@ -177,6 +187,12 @@ export const getAwards = createServerFn({ method: "POST" })
     for (const t of s.transactions ?? []) if (t.status === "EXECUTED" && t.teamId != null && ["WAIVER", "FREEAGENT"].includes(t.type ?? "")) moves.set(t.teamId, (moves.get(t.teamId) ?? 0) + 1);
     const trades = new Map<number, number>();
     for (const t of s.transactions ?? []) if (t.status === "EXECUTED" && t.type === "TRADE" && t.teamId != null) trades.set(t.teamId, (trades.get(t.teamId) ?? 0) + 1);
+    // Prefer ESPN's per-team counters — they cover past seasons too.
+    for (const t of s.teams ?? []) {
+      if (t.id == null || !t.transactionCounter) continue;
+      if (t.transactionCounter.acquisitions != null) moves.set(t.id, t.transactionCounter.acquisitions);
+      if (t.transactionCounter.trades != null) trades.set(t.id, t.transactionCounter.trades);
+    }
 
     const awards: Award[] = [];
     const teamOf = (who: string) => teams.find((t) => t.managers === who)?.team;
@@ -283,7 +299,9 @@ export const getNewsletter = createServerFn({ method: "POST" })
     const standings = [...rec.values()].sort((a, b) => b.w - a.w || b.pf - a.pf).map((r) => ({ ...r, pf: r2(r.pf) }));
     const unluckiest = [...scores].filter((x) => x.s.pts < x.o.pts).sort((a, b) => b.s.pts - a.s.pts)[0];
     const luckiest = [...scores].filter((x) => x.s.pts > x.o.pts).sort((a, b) => a.s.pts - b.s.pts)[0];
-    const moves = (s.transactions ?? []).filter((t) => t.status === "EXECUTED").length;
+    const movesFromList = (s.transactions ?? []).filter((t) => t.status === "EXECUTED").length;
+    const movesFromCounter = (s.teams ?? []).reduce((n, t) => n + (t.transactionCounter?.acquisitions ?? 0) + (t.transactionCounter?.trades ?? 0), 0);
+    const moves = Math.max(movesFromList, movesFromCounter);
     const allGames = seasons.flatMap((x) => games(L, x));
     const h2h = (a: string, b: string) => {
       let aw = 0, bw = 0;

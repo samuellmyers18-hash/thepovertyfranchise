@@ -10,6 +10,7 @@ export type RawTeam = {
   rankCalculatedFinal?: number;
   playoffSeed?: number;
   record?: { overall?: { wins?: number; losses?: number; ties?: number; pointsFor?: number; pointsAgainst?: number; streakLength?: number; streakType?: string } };
+  transactionCounter?: { acquisitions?: number; drops?: number; trades?: number; acquisitionBudgetSpent?: number };
 };
 export type RawMatch = {
   matchupPeriodId?: number;
