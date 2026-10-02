@@ -1,14 +1,18 @@
-# Welcome to your Lovable project
+# Fantasy Franchise Hub
+
+Make a website for my fantasy football history, a login and you claim your manager, which is separate from the teams, but they are connected. My espn account is samuellmyers19@gmail.com and the password is $t0m@t000 as you may need that for the league, which is called the poverty franchise. Also make a model off of analyzing other websites and rankings for players. I need many different tabs including power rankings for the fantasy teams, viewing teams, history for the teams, records from years, filters to filter by year, and rivalry’s based on lots of matchups, basically all the data tha espn gives you, I want it analyzed and put into the website
 
 This project was built with [Lovable](https://lovable.dev).
 
+**Live app**: https://thepovertyfranchise.lovable.app
+
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/710faec7-f683-4458-b66a-e8583ebf5c66).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +24,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
