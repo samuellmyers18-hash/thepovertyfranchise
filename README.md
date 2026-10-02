@@ -4,7 +4,7 @@ Make a website for my fantasy football history, a login and you claim your manag
 
 This project was built with [Lovable](https://lovable.dev).
 
-**Live app**: https://thepovertyfranchise.lovable.app
+**Live app**: app
 
 ## Build with Lovable
 
