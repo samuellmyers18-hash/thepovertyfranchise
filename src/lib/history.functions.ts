@@ -187,6 +187,12 @@ export const getAwards = createServerFn({ method: "POST" })
     for (const t of s.transactions ?? []) if (t.status === "EXECUTED" && t.teamId != null && ["WAIVER", "FREEAGENT"].includes(t.type ?? "")) moves.set(t.teamId, (moves.get(t.teamId) ?? 0) + 1);
     const trades = new Map<number, number>();
     for (const t of s.transactions ?? []) if (t.status === "EXECUTED" && t.type === "TRADE" && t.teamId != null) trades.set(t.teamId, (trades.get(t.teamId) ?? 0) + 1);
+    // Prefer ESPN's per-team counters — they cover past seasons too.
+    for (const t of s.teams ?? []) {
+      if (t.id == null || !t.transactionCounter) continue;
+      if (t.transactionCounter.acquisitions != null) moves.set(t.id, t.transactionCounter.acquisitions);
+      if (t.transactionCounter.trades != null) trades.set(t.id, t.transactionCounter.trades);
+    }
 
     const awards: Award[] = [];
     const teamOf = (who: string) => teams.find((t) => t.managers === who)?.team;
