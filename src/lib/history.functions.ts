@@ -99,6 +99,16 @@ export const getRecords = createServerFn({ method: "POST" })
         if ((t.bidAmount ?? 0) > 0) bids.push({ value: `$${t.bidAmount}`, who: a.managers, team: a.team, detail: `${s.seasonId} waiver claim`, season: s.seasonId ?? 0 });
         agg.set(t.teamId, a);
       }
+      // ESPN's per-team counter covers every season (the transaction list only
+      // covers the current one), so prefer it for pickup/trade totals.
+      for (const team of s.teams ?? []) {
+        const tc = team.transactionCounter;
+        if (!tc || team.id == null) continue;
+        const a = agg.get(team.id) ?? { season: s.seasonId ?? 0, team: L.teamName(team), managers: L.teamManagers(s, team).join(" & "), pickups: 0, trades: 0, faab: 0, topBid: 0 };
+        a.pickups = tc.acquisitions ?? a.pickups;
+        a.trades = tc.trades ?? a.trades;
+        agg.set(team.id, a);
+      }
       txSeasons.push(...agg.values());
     }
     const mgrTx = new Map<string, { p: number; t: number; f: number }>();
