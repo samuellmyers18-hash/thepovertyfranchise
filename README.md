@@ -1,6 +1,6 @@
 # Fantasy Franchise Hub
 
-Make a website for my fantasy football history, a login and you claim your manager, which is separate from the teams, but they are connected. My espn account is samuellmyers19@gmail.com and the password is $t0m@t000 as you may need that for the league, which is called the poverty franchise. Also make a model off of analyzing other websites and rankings for players. I need many different tabs including power rankings for the fantasy teams, viewing teams, history for the teams, records from years, filters to filter by year, and rivalry’s based on lots of matchups, basically all the data tha espn gives you, I want it analyzed and put into the website
+Make a website for my fantasy football history, a login and you claim your manager, which is separate from the teams, but they are connected. My espn account is ************************ and the password is ********* as you may need that for the league, which is called the poverty franchise. Also make a model off of analyzing other websites and rankings for players. I need many different tabs including power rankings for the fantasy teams, viewing teams, history for the teams, records from years, filters to filter by year, and rivalry’s based on lots of matchups, basically all the data tha espn gives you, I want it analyzed and put into the website
 
 This project was built with [Lovable](https://lovable.dev).
 
