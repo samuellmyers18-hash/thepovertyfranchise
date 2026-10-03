@@ -354,7 +354,7 @@ export async function savePovertyPost(
         week,
         title: post.title,
         content: post.content,
-        hot_take: post.hot_take ?? null,
+        hot_take: post.hot_take == null ? null : JSON.stringify(post.hot_take),
         awards: post.awards ?? null,
         generated_at: new Date().toISOString(),
       },
@@ -369,4 +369,21 @@ export async function savePovertyPost(
   }
 
   return { success: true };
+}
+export async function getPovertyPost(season: number, week: number) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  const { data, error } = await supabaseAdmin
+    .from("poverty_posts")
+    .select("title, content, hot_take, awards, generated_at")
+    .eq("season", season)
+    .eq("week", week)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Poverty Post load error:", error);
+    return null;
+  }
+
+  return data;
 }
