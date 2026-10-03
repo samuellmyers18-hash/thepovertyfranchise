@@ -381,6 +381,22 @@ export const getLeagueHome = createServerFn({ method: "POST" })
       };
     }
 
+    const weeklyRecords = {
+      power_rankings: power,
+      awards: facts,
+      hot_take: hotTake,
+      records: {
+        topScores,
+        pointsLeaders,
+      },
+      trends: trend,
+      predictions: matchups.map((m) => m.prediction).filter(Boolean),
+    };
+    await L.saveWeeklyRecords(
+      cur.seasonId ?? 0,
+      lastWeek,
+      weeklyRecords,
+    );
     const savedWeeks = new Set(
       await L.getSavedWeeklySnapshots(cur.seasonId ?? 0),
     );
