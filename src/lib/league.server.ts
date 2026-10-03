@@ -78,12 +78,10 @@ async function getConn() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   const { data, error } = await supabaseAdmin
-    .from("espn_connections")
-    .select("swid, espn_s2, league_id")
-    .not("league_id", "is", null)
-    .order("last_verified_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  .from("espn_connections")
+  .select("swid, espn_s2, league_id")
+  .limit(1)
+  .maybeSingle();
 
   if (error) {
     console.error("ESPN connection query error:", error);
