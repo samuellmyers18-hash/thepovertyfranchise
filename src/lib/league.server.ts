@@ -240,6 +240,26 @@ export async function getSavedWeeklySnapshots(season: number) {
 
   return (data ?? []).map((row) => row.week);
 }
+export async function getWeeklySnapshot(
+  season: number,
+  week: number,
+) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  const { data, error } = await supabaseAdmin
+    .from("weekly_snapshots")
+    .select("season, week, captured_at, raw_season, raw_rosters, raw_player_pool")
+    .eq("season", season)
+    .eq("week", week)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Weekly snapshot fetch error:", error);
+    throw error;
+  }
+
+  return data;
+}
 export async function saveWeeklySnapshot(
   season: number,
   week: number,
