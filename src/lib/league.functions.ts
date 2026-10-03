@@ -383,13 +383,24 @@ export const getLeagueHome = createServerFn({ method: "POST" })
       };
     }
 
-    await L.saveWeeklySnapshot(
-      cur.seasonId ?? 0,
-      lastWeek,
-      cur,
-      snapshotRosters,
-      snapshotPlayerPool,
+    const savedWeeks = new Set(
+      await L.getSavedWeeklySnapshots(cur.seasonId ?? 0),
     );
+
+    for (const week of weeks) {
+      if (savedWeeks.has(week)) continue;
+
+      const rosters = await L.fetchRosterWeek(cur.seasonId ?? 0, week);
+      const playerPool = await L.fetchPlayerPool(cur.seasonId ?? 0, week);
+
+      await L.saveWeeklySnapshot(
+        cur.seasonId ?? 0,
+        week,
+        cur,
+        rosters,
+        playerPool,
+      );
+    }
     return { error, season: cur.seasonId ?? null, week: currentWeek, standings, power, facts, trend, topScores, pointsLeaders, matchups, featured, moves, hotTake };
   });
 
