@@ -272,3 +272,31 @@ export async function saveWeeklySnapshot(
 
   return { success: true };
 }
+
+export async function saveWeeklyRecords(
+  season: number,
+  week: number,
+  records: unknown,
+) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  const { error } = await supabaseAdmin
+    .from("weekly_records")
+    .upsert(
+      {
+        season,
+        week,
+        records,
+      },
+      {
+        onConflict: "season,week",
+      },
+    );
+
+  if (error) {
+    console.error("Weekly records save error:", error);
+    throw error;
+  }
+
+  return { success: true };
+}
