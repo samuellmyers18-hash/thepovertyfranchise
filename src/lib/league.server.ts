@@ -276,7 +276,14 @@ export async function saveWeeklySnapshot(
 export async function saveWeeklyRecords(
   season: number,
   week: number,
-  records: unknown,
+  records: {
+    power_rankings?: unknown;
+    awards?: unknown;
+    hot_take?: unknown;
+    records?: unknown;
+    trends?: unknown;
+    predictions?: unknown;
+  },
 ) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -286,7 +293,13 @@ export async function saveWeeklyRecords(
       {
         season,
         week,
-        records,
+        power_rankings: records.power_rankings ?? null,
+        awards: records.awards ?? null,
+        hot_take: records.hot_take ?? null,
+        records: records.records ?? null,
+        trends: records.trends ?? null,
+        predictions: records.predictions ?? null,
+        generated_at: new Date().toISOString(),
       },
       {
         onConflict: "season,week",
