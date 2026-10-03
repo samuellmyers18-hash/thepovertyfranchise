@@ -333,3 +333,40 @@ export async function saveWeeklyRecords(
 
   return { success: true };
 }
+
+export async function savePovertyPost(
+  season: number,
+  week: number,
+  post: {
+    title: string;
+    content: string;
+    hot_take?: unknown;
+    awards?: unknown;
+  },
+) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  const { error } = await supabaseAdmin
+    .from("poverty_posts")
+    .upsert(
+      {
+        season,
+        week,
+        title: post.title,
+        content: post.content,
+        hot_take: post.hot_take ?? null,
+        awards: post.awards ?? null,
+        generated_at: new Date().toISOString(),
+      },
+      {
+        onConflict: "season,week",
+      },
+    );
+
+  if (error) {
+    console.error("Poverty Post save error:", error);
+    throw error;
+  }
+
+  return { success: true };
+}
