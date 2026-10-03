@@ -175,8 +175,6 @@ export const getLeagueHome = createServerFn({ method: "POST" })
     const recentWeeks = weeks.slice(-3);
     const projByTeam = new Map<number, number>();
     const curWeekNum = cur.status?.currentMatchupPeriod ?? lastWeek;
-    const snapshotRosters = await L.fetchRosterWeek(cur.seasonId ?? 0, lastWeek);
-    const snapshotPlayerPool = await L.fetchPlayerPool(cur.seasonId ?? 0, lastWeek);
     for (const g of cur.schedule ?? []) {
       if (g.matchupPeriodId !== curWeekNum) continue;
       if (g.home?.teamId != null && g.home.totalProjectedPointsLive != null) projByTeam.set(g.home.teamId, g.home.totalProjectedPointsLive);
