@@ -383,6 +383,13 @@ export const getLeagueHome = createServerFn({ method: "POST" })
       };
     }
 
+    await L.saveWeeklySnapshot(
+      cur.seasonId ?? 0,
+      lastWeek,
+      cur,
+      snapshotRosters,
+      snapshotPlayerPool,
+    );
     return { error, season: cur.seasonId ?? null, week: currentWeek, standings, power, facts, trend, topScores, pointsLeaders, matchups, featured, moves, hotTake };
   });
 
