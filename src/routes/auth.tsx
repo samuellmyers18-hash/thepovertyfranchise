@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,17 +67,7 @@ function AuthPage() {
     }
   }
 
-  async function handleGoogle() {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      toast.error("Google sign-in didn't work. Try again.");
-      return;
-    }
-    if (result.redirected) return;
-    navigate({ to: "/" });
-  }
+
 
   return (
     <main className="field-grid flex min-h-screen items-center justify-center bg-background px-4 py-12">
@@ -94,15 +83,9 @@ function AuthPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-          <Button type="button" variant="secondary" className="w-full" onClick={handleGoogle}>
-            Continue with Google
-          </Button>
+      
 
-          <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />
-            or
-            <span className="h-px flex-1 bg-border" />
-          </div>
+  
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === "signup" && (
