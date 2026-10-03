@@ -373,6 +373,28 @@ export const getNewsletter = createServerFn({ method: "POST" })
       standings: standings.map((r) => ({ team: r.team, managers: r.managers, w: r.w, l: r.l })),
       allPlay: allPlay.map((x) => ({ team: x.team, managers: x.managers, w: x.w, l: x.l })),
     });
+        // Load a previously saved Poverty Post for this season/week.
+    // This keeps completed weeks from being regenerated differently later.
+    const savedIssue = await L.getPovertyPost(s.seasonId ?? 0, week);
+
+    if (savedIssue?.content) {
+      try {
+        const parsed = JSON.parse(savedIssue.content);
+
+        if (parsed && typeof parsed === "object") {
+          return {
+            error: null as string | null,
+            years,
+            season: s.seasonId ?? null,
+            week,
+            weeks,
+            issue: parsed,
+          };
+        }
+      } catch {
+        // If an older saved row is invalid JSON, regenerate it below.
+      }
+    }
     const issue = {
       volume: years.indexOf(s.seasonId ?? 0) >= 0 ? s.seasonId! - Math.min(...years) + 1 : 1,
       lead,
@@ -400,5 +422,28 @@ export const getNewsletter = createServerFn({ method: "POST" })
           ? `Scoring was up this week — the league averaged ${avg.toFixed(1)} points, ${(avg - seasonAvg).toFixed(1)} above the season norm. Offenses everywhere ate.`
           : `A quieter week across the league: teams averaged ${avg.toFixed(1)} points, ${(seasonAvg - avg).toFixed(1)} below the season norm. Defenses (and bad start/sit decisions) ruled the day.`,
     };
-    return { error: null as string | null, years, season: s.seasonId ?? null, week, weeks, issue };
+        await L.savePovertyPost(
+      s.seasonId ?? 0,
+      week,
+      {
+        title: "The Poverty Post",
+        content: JSON.stringify(issue),
+        hot_take: hotTake,
+        awards: {
+          topScorer: issue.topScorer,
+          bust: issue.bust,
+          unluckiest: issue.unluckiest,
+          luckiest: issue.luckiest,
+        },
+      },
+    );
+
+    return {
+      error: null as string | null,
+      years,
+      season: s.seasonId ?? null,
+      week,
+      weeks,
+      issue,
+    };
   });
