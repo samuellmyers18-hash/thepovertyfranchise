@@ -418,6 +418,131 @@ export const getLeagueHome = createServerFn({ method: "POST" })
       // Keep the current week's records from being overwritten
       // by the historical backfill below.
       if (week === lastWeek) continue;
+            // Build and save historical weekly records.
+      const historicalScores = new Map<number, number>();
+
+      for (const [tid, pts] of scores.get(week) ?? []) {
+        historicalScores.set(tid, pts);
+      }
+
+      const historicalStandings: StandingRow[] = teams
+        .map((t) => {
+          const teamId = t.id ?? 0;
+          let wins = 0;
+          let losses = 0;
+          let ties = 0;
+          let pf = 0;
+
+          for (const w of weeks) {
+            if (w > week) continue;
+            const wk = scores.get(w);
+            const mine = wk?.get(teamId);
+            if (mine == null) continue;
+
+            pf += mine;
+
+            for (const [oppId, oppPts] of wk) {
+              if (oppId === teamId) continue;
+              if (mine > oppPts) wins++;
+              else if (mine < oppPts) losses++;
+              else ties++;
+              break;
+            }
+          }
+
+          return {
+            teamId,
+            ...label(t),
+            wins,
+            losses,
+            ties,
+            pf: r2(pf),
+            pa: 0,
+            streak: "—",
+          };
+        })
+        .sort((a, b) => b.wins - a.wins || b.pf - a.pf);
+
+      const historicalTopScores: TopScore[] = [];
+
+      for (const g of all) {
+        if (g.season !== cur.seasonId || g.week > week) continue;
+
+        historicalTopScores.push({
+          who: g.w,
+          pts: r2(g.ws),
+          season: g.season,
+          week: g.week,
+        });
+      }
+
+      historicalTopScores.sort((a, b) => b.pts - a.pts);
+
+      const historicalTrend: WeekPoint[] = weeks
+        .filter((w) => w <= week)
+        .map((w) => {
+          const wk = scores.get(w);
+          const vals = [...(wk?.values() ?? [])];
+          const avg = vals.length
+            ? vals.reduce((a, b) => a + b, 0) / vals.length
+            : 0;
+
+          let high = 0;
+          let highWho = "";
+
+          for (const [tid, pts] of wk ?? []) {
+            if (pts > high) {
+              high = pts;
+              const team = teams.find((t) => t.id === tid);
+              highWho = team
+                ? label(team).managers
+                : "";
+            }
+          }
+
+          return {
+            week: w,
+            avg: r2(avg),
+            high: r2(high),
+            highWho,
+          };
+        });
+
+      const historicalWeekGames = all.filter(
+        (g) => g.season === cur.seasonId && g.week === week,
+      );
+
+      const historicalHotTake = H.makeHotTake({
+        scores: historicalWeekGames.map((g) => ({
+          team: g.w,
+          managers: g.w,
+          pts: g.ws,
+          oppPts: g.ls,
+        })),
+        standings: historicalStandings.map((s) => ({
+          team: s.team,
+          managers: s.managers,
+          w: s.wins,
+          l: s.losses,
+        })),
+        allPlay: [],
+      });
+
+      await L.saveWeeklyRecords(
+        cur.seasonId ?? 0,
+        week,
+        {
+          power_rankings: historicalStandings,
+          awards: historicalWeekGames,
+          hot_take: historicalHotTake,
+          records: {
+            topScores: historicalTopScores.slice(0, 5),
+            pointsLeaders,
+          },
+          trends: historicalTrend,
+          predictions: [],
+        },
+      );
     }
     return { error, season: cur.seasonId ?? null, week: currentWeek, standings, power, facts, trend, topScores, pointsLeaders, matchups, featured, moves, hotTake };
   });
