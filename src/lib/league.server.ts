@@ -224,6 +224,22 @@ export async function fetchPlayerPool(year: number, week: number): Promise<RawPo
     return null;
   }
 }
+export async function getSavedWeeklySnapshots(season: number) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  const { data, error } = await supabaseAdmin
+    .from("weekly_snapshots")
+    .select("week")
+    .eq("season", season)
+    .order("week", { ascending: true });
+
+  if (error) {
+    console.error("Weekly snapshot lookup error:", error);
+    throw error;
+  }
+
+  return (data ?? []).map((row) => row.week);
+}
 export async function saveWeeklySnapshot(
   season: number,
   week: number,
