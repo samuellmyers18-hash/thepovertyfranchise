@@ -16,8 +16,8 @@ export type RawMatch = {
   matchupPeriodId?: number;
   playoffTierType?: string;
   winner?: string;
-  home?: { teamId?: number; totalPoints?: number; totalProjectedPointsLive?: number; pointsByScoringPeriod?: Record<string, number>; cumulativeScore?: { scoreByScoringPeriod?: Record<string, number> } };
-  away?: { teamId?: number; totalPoints?: number; totalProjectedPointsLive?: number; pointsByScoringPeriod?: Record<string, number>; cumulativeScore?: { scoreByScoringPeriod?: Record<string, number> } };
+  home?: { teamId?: number; totalPoints?: number; totalPointsLive?: number; totalProjectedPointsLive?: number; pointsByScoringPeriod?: Record<string, number>; cumulativeScore?: { scoreByScoringPeriod?: Record<string, number> } };
+  away?: { teamId?: number; totalPoints?: number; totalPointsLive?: number; totalProjectedPointsLive?: number; pointsByScoringPeriod?: Record<string, number>; cumulativeScore?: { scoreByScoringPeriod?: Record<string, number> } };
 };
 
 /**
@@ -32,7 +32,13 @@ export function matchWeeks(m: RawMatch): Array<{ period: number; homePts: number
     .map(Number)
     .filter((n) => Number.isFinite(n))
     .sort((a, b) => a - b);
-  if (periods.length <= 1) return [{ period: m.matchupPeriodId ?? 0, homePts: m.home?.totalPoints ?? 0, awayPts: m.away?.totalPoints ?? 0 }];
+  if (periods.length <= 1) {
+  return [{
+    period: m.matchupPeriodId ?? 0,
+    homePts: m.home?.totalPointsLive ?? m.home?.totalPoints ?? 0,
+    awayPts: m.away?.totalPointsLive ?? m.away?.totalPoints ?? 0,
+  }];
+}
   return periods.map((p) => ({ period: p, homePts: hp?.[String(p)] ?? 0, awayPts: ap?.[String(p)] ?? 0 }));
 }
 export type RawSeason = {
