@@ -19,6 +19,7 @@ import { Route as AuthenticatedDraftsRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedMatchupsRouteImport } from './routes/_authenticated/matchups'
 import { Route as AuthenticatedNewsletterRouteImport } from './routes/_authenticated/newsletter'
 import { Route as AuthenticatedPlayersRouteImport } from './routes/_authenticated/players'
+import { Route as AuthenticatedPovertyRouteImport } from './routes/_authenticated/poverty'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedRecordsRouteImport } from './routes/_authenticated/records'
 import { Route as AuthenticatedRivalriesRouteImport } from './routes/_authenticated/rivalries'
@@ -75,6 +76,11 @@ const AuthenticatedPlayersRoute = AuthenticatedPlayersRouteImport.update({
   path: '/players',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPovertyRoute = AuthenticatedPovertyRouteImport.update({
+  id: '/poverty',
+  path: '/poverty',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/matchups': typeof AuthenticatedMatchupsRoute
   '/newsletter': typeof AuthenticatedNewsletterRoute
   '/players': typeof AuthenticatedPlayersRoute
+  '/poverty': typeof AuthenticatedPovertyRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/records': typeof AuthenticatedRecordsRoute
   '/rivalries': typeof AuthenticatedRivalriesRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByTo {
   '/matchups': typeof AuthenticatedMatchupsRoute
   '/newsletter': typeof AuthenticatedNewsletterRoute
   '/players': typeof AuthenticatedPlayersRoute
+  '/poverty': typeof AuthenticatedPovertyRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/records': typeof AuthenticatedRecordsRoute
   '/rivalries': typeof AuthenticatedRivalriesRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/_authenticated/matchups': typeof AuthenticatedMatchupsRoute
   '/_authenticated/newsletter': typeof AuthenticatedNewsletterRoute
   '/_authenticated/players': typeof AuthenticatedPlayersRoute
+  '/_authenticated/poverty': typeof AuthenticatedPovertyRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/records': typeof AuthenticatedRecordsRoute
   '/_authenticated/rivalries': typeof AuthenticatedRivalriesRoute
@@ -173,6 +182,7 @@ export interface FileRouteTypes {
     | '/matchups'
     | '/newsletter'
     | '/players'
+    | '/poverty'
     | '/profile'
     | '/records'
     | '/rivalries'
@@ -190,6 +200,7 @@ export interface FileRouteTypes {
     | '/matchups'
     | '/newsletter'
     | '/players'
+    | '/poverty'
     | '/profile'
     | '/records'
     | '/rivalries'
@@ -208,6 +219,7 @@ export interface FileRouteTypes {
     | '/_authenticated/matchups'
     | '/_authenticated/newsletter'
     | '/_authenticated/players'
+    | '/_authenticated/poverty'
     | '/_authenticated/profile'
     | '/_authenticated/records'
     | '/_authenticated/rivalries'
@@ -294,6 +306,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlayersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/poverty': {
+      id: '/_authenticated/poverty'
+      path: '/poverty'
+      fullPath: '/poverty'
+      preLoaderRoute: typeof AuthenticatedPovertyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
@@ -347,6 +366,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMatchupsRoute: typeof AuthenticatedMatchupsRoute
   AuthenticatedNewsletterRoute: typeof AuthenticatedNewsletterRoute
   AuthenticatedPlayersRoute: typeof AuthenticatedPlayersRoute
+  AuthenticatedPovertyRoute: typeof AuthenticatedPovertyRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRecordsRoute: typeof AuthenticatedRecordsRoute
   AuthenticatedRivalriesRoute: typeof AuthenticatedRivalriesRoute
@@ -363,6 +383,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMatchupsRoute: AuthenticatedMatchupsRoute,
   AuthenticatedNewsletterRoute: AuthenticatedNewsletterRoute,
   AuthenticatedPlayersRoute: AuthenticatedPlayersRoute,
+  AuthenticatedPovertyRoute: AuthenticatedPovertyRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRecordsRoute: AuthenticatedRecordsRoute,
   AuthenticatedRivalriesRoute: AuthenticatedRivalriesRoute,
