@@ -246,6 +246,21 @@ export async function getSavedWeeklySnapshots(season: number) {
 
   return (data ?? []).map((row) => row.week);
 }
+/** Read existing weekly roster/player snapshots without creating or updating them. */
+export async function getWeeklySnapshots(season: number) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await (supabaseAdmin as any)
+    .from("weekly_snapshots")
+    .select("season, week, raw_rosters, raw_player_pool")
+    .eq("season", season)
+    .order("week", { ascending: true });
+
+  if (error) {
+    console.error("Weekly snapshot lookup error:", error);
+    return [];
+  }
+  return data ?? [];
+}
 export async function getWeeklySnapshot(
   season: number,
   week: number,

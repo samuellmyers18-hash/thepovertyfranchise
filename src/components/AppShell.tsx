@@ -1,6 +1,10 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Home, Users, User, Swords, ListOrdered, BadgeCheck, Settings, LogOut, LogIn, Menu, X, ClipboardList, CalendarDays, TrendingUp, Trophy, Award, Newspaper } from "lucide-react";
+import {
+  Home, Users, User, Swords, ListOrdered, BadgeCheck, Settings, LogOut,
+  LogIn, Menu, X, ClipboardList, CalendarDays, TrendingUp, Trophy, Award,
+  Newspaper, Coins,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -41,6 +45,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Link to="/matchups" className={item} activeProps={active}><CalendarDays className="h-4 w-4" />Matchups</Link>
           <Link to="/players" className={item} activeProps={active}><TrendingUp className="h-4 w-4" />Player rankings</Link>
           <Link to="/records" className={item} activeProps={active}><Trophy className="h-4 w-4" />Records</Link>
+          <Link to="/poverty" className={item} activeProps={active}><Coins className="h-4 w-4" />Poverty Meter</Link>
           <Link to="/awards" className={item} activeProps={active}><Award className="h-4 w-4" />Awards</Link>
           <Link to="/newsletter" className={item} activeProps={active}><Newspaper className="h-4 w-4" />The Poverty Post</Link>
           <Link to="/profile" className={item} activeProps={active}><User className="h-4 w-4" />My profile</Link>
