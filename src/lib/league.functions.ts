@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { calculateManagerDNA } from "./manager-dna";
 import type { RawMatch, RawSeason, RawTeam } from "./league.server";
 
 function mKey(name: string) {
@@ -738,8 +739,18 @@ export const getManagerProfile = createServerFn({ method: "POST" })
     const L = await lib();
     const { seasons, error } = await L.loadAllSeasons();
     const manager = buildManagers(L, seasons).find((m) => m.key === data.key) ?? null;
-    if (!manager) return { error: error ?? "Manager not found.", manager: null, facts: [] as FunFact[], claimed: false };
+    if (!manager) return { error: error ?? "Manager not found.", manager: null, facts: [] as FunFact[], claimed: false, dna: null };
     const { data: claim } = await context.supabase.from("manager_claims").select("user_id").eq("manager_key", data.key).maybeSingle();
+
+    // Use only existing saved snapshots for lineup/roster behavior. This adds
+    // no ESPN calls and does not create or update any snapshot or record data.
+    const snapshotSeasons = seasons.filter((s) =>
+      (s.teams ?? []).some((team) => L.teamManagers(s, team).some((name) => mKey(name) === data.key)),
+    );
+    const snapshotGroups = await Promise.all(
+      snapshotSeasons.flatMap((s) => (s.seasonId == null ? [] : [L.getWeeklySnapshots(s.seasonId)])),
+    );
+    const dna = calculateManagerDNA(data.key, seasons, snapshotGroups.flat(), L);
 
     type Gm = { season: number; week: number; me: number; opp: number; opps: string[]; playoff: boolean };
     const games: Gm[] = [];
@@ -795,7 +806,7 @@ export const getManagerProfile = createServerFn({ method: "POST" })
     const luck = games.filter((g) => g.me < g.opp && g.me > 0).length ? best(games.filter((g) => g.me < g.opp), (g) => g.me) : null;
     if (luck) facts.push({ title: "Unluckiest loss", value: luck.me.toFixed(2), detail: `Lost anyway · ${at(luck)}` });
 
-    return { error, manager, facts, claimed: Boolean(claim) };
+    return { error, manager, facts, claimed: Boolean(claim), dna };
   });
 
 export type RankedPlayer = {
