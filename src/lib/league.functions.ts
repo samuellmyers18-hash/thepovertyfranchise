@@ -1,6 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { calculateManagerDNA } from "./manager-dna";
+import { buildManagers } from "./manager-profiles";
+import { matchupIdentityKey } from "./matchup-identity";
+export type { ManagerSeason, ManagerSummary } from "./manager-profiles";
 import type { RawMatch, RawSeason, RawTeam } from "./league.server";
 
 function mKey(name: string) {
@@ -8,38 +11,9 @@ function mKey(name: string) {
 }
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
-export type ManagerSeason = {
-  season: number;
-  teamId: number;
-  teamName: string;
-  coManagers: string[];
-  wins: number;
-  losses: number;
-  ties: number;
-  pointsFor: number;
-  pointsAgainst: number;
-  finalRank: number | null;
-  seed: number | null;
-};
-export type ManagerSummary = {
-  key: string;
-  name: string;
-  seasons: ManagerSeason[];
-  wins: number;
-  losses: number;
-  ties: number;
-  pointsFor: number;
-  pointsAgainst: number;
-  championships: number;
-  bestFinish: number | null;
-  claimedBy: string | null;
-};
-
 async function lib() {
   return import("./league.server");
 }
-
-type Ctx = Awaited<ReturnType<typeof lib>>;
 
 function done(m: RawMatch) {
   return m.winner === "HOME" || m.winner === "AWAY" || m.winner === "TIE";
@@ -48,53 +22,12 @@ function regular(m: RawMatch) {
   return !m.playoffTierType || m.playoffTierType === "NONE";
 }
 
-function buildManagers(L: Ctx, seasons: RawSeason[]): ManagerSummary[] {
-  const map = new Map<string, ManagerSummary>();
-  for (const s of seasons) {
-    for (const t of s.teams ?? []) {
-      const names = L.teamManagers(s, t);
-      const rec = t.record?.overall ?? {};
-      for (const n of names) {
-        const key = mKey(n);
-        const m =
-          map.get(key) ??
-          ({ key, name: n, seasons: [], wins: 0, losses: 0, ties: 0, pointsFor: 0, pointsAgainst: 0, championships: 0, bestFinish: null, claimedBy: null } as ManagerSummary);
-        const row: ManagerSeason = {
-          season: s.seasonId ?? 0,
-          teamId: t.id ?? 0,
-          teamName: L.teamName(t),
-          coManagers: names.filter((x) => x !== n),
-          wins: rec.wins ?? 0,
-          losses: rec.losses ?? 0,
-          ties: rec.ties ?? 0,
-          pointsFor: r2(rec.pointsFor ?? 0),
-          pointsAgainst: r2(rec.pointsAgainst ?? 0),
-          finalRank: t.rankCalculatedFinal || null,
-          seed: t.playoffSeed || null,
-        };
-        m.seasons.push(row);
-        m.wins += row.wins;
-        m.losses += row.losses;
-        m.ties += row.ties;
-        m.pointsFor += row.pointsFor;
-        m.pointsAgainst += row.pointsAgainst;
-        if (row.finalRank === 1) m.championships++;
-        if (row.finalRank && (m.bestFinish === null || row.finalRank < m.bestFinish)) m.bestFinish = row.finalRank;
-        map.set(key, m);
-      }
-    }
-  }
-  return [...map.values()]
-    .map((m) => ({ ...m, pointsFor: r2(m.pointsFor), pointsAgainst: r2(m.pointsAgainst), seasons: m.seasons.sort((a, b) => b.season - a.season) }))
-    .sort((a, b) => b.wins - a.wins || b.pointsFor - a.pointsFor);
-}
-
 export const getManagers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const L = await lib();
     const { seasons, error } = await L.loadAllSeasons();
-    const managers = buildManagers(L, seasons);
+    const managers = buildManagers(seasons, L);
     const { data: claims } = await context.supabase.from("manager_claims").select("manager_key, user_id");
     const claimMap = new Map((claims ?? []).map((c) => [c.manager_key, c.user_id]));
     const myClaim = (claims ?? []).find((c) => c.user_id === context.userId)?.manager_key ?? null;
@@ -258,7 +191,7 @@ export const getLeagueHome = createServerFn({ method: "POST" })
     if (blow) facts.push({ title: "Biggest blowout", value: `+${(blow.ws - blow.ls).toFixed(2)}`, detail: `${blow.w} over ${blow.l} · ${blow.season} wk ${blow.week}` });
     const close = pick(all.filter((g) => g.ws !== g.ls), (g) => -(g.ws - g.ls));
     if (close) facts.push({ title: "Closest game", value: `${(close.ws - close.ls).toFixed(2)} pts`, detail: `${close.w} edged ${close.l} · ${close.season} wk ${close.week}` });
-    const mgrs = buildManagers(L, seasons);
+    const mgrs = buildManagers(seasons, L);
     const champ = pick(mgrs, (m) => m.championships);
     if (champ && champ.championships) facts.push({ title: "Most titles", value: String(champ.championships), detail: champ.name });
     const best = pick(mgrs.filter((m) => m.wins + m.losses >= 10), (m) => m.wins / (m.wins + m.losses + m.ties));
@@ -738,8 +671,8 @@ export const getManagerProfile = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const L = await lib();
     const { seasons, error } = await L.loadAllSeasons();
-    const manager = buildManagers(L, seasons).find((m) => m.key === data.key) ?? null;
-    if (!manager) return { error: error ?? "Manager not found.", manager: null, facts: [] as FunFact[], claimed: false, dna: null };
+    const manager = buildManagers(seasons, L).find((m) => m.key === data.key) ?? null;
+    if (!manager) return { error: error ?? "Manager not found.", manager: null, facts: [] as FunFact[], claimed: false, dna: null, story: null };
     const { data: claim } = await context.supabase.from("manager_claims").select("user_id").eq("manager_key", data.key).maybeSingle();
 
     // Use only existing saved snapshots for lineup/roster behavior. This adds
@@ -747,13 +680,18 @@ export const getManagerProfile = createServerFn({ method: "POST" })
     const snapshotSeasons = seasons.filter((s) =>
       (s.teams ?? []).some((team) => L.teamManagers(s, team).some((name) => mKey(name) === data.key)),
     );
-    const snapshotGroups = await Promise.all(
-      snapshotSeasons.flatMap((s) => (s.seasonId == null ? [] : [L.getWeeklySnapshots(s.seasonId)])),
-    );
+    const { updateManagerStory } = await import("./manager-stories.server");
+    const [snapshotGroups, story] = await Promise.all([
+      Promise.all(
+        snapshotSeasons.flatMap((s) => (s.seasonId == null ? [] : [L.getWeeklySnapshots(s.seasonId)])),
+      ),
+      updateManagerStory(data.key, manager.name, seasons, L),
+    ]);
     const dna = calculateManagerDNA(data.key, seasons, snapshotGroups.flat(), L);
 
-    type Gm = { season: number; week: number; me: number; opp: number; opps: string[]; playoff: boolean };
+    type Gm = { season: number; week: number; homeId: number; awayId: number; me: number; opp: number; opps: string[]; playoff: boolean };
     const games: Gm[] = [];
+    const seenMatchups = new Set<string>();
     for (const s of [...seasons].sort((a, b) => (a.seasonId ?? 0) - (b.seasonId ?? 0))) {
       const byId = new Map((s.teams ?? []).map((t) => [t.id, L.teamManagers(s, t)]));
       for (const m of [...(s.schedule ?? [])].sort((a, b) => (a.matchupPeriodId ?? 0) - (b.matchupPeriodId ?? 0))) {
@@ -762,8 +700,17 @@ export const getManagerProfile = createServerFn({ method: "POST" })
         const isHome = hm.some((n) => mKey(n) === data.key), isAway = am.some((n) => mKey(n) === data.key);
         if (!isHome && !isAway) continue;
         for (const wk of L.matchWeeks(m)) {
+          const season = s.seasonId ?? 0;
+          const identity = matchupIdentityKey({
+            season,
+            week: wk.period,
+            homeId: m.home.teamId,
+            awayId: m.away.teamId,
+          });
+          if (seenMatchups.has(identity)) continue;
+          seenMatchups.add(identity);
           games.push({
-            season: s.seasonId ?? 0, week: wk.period, playoff: !regular(m),
+            season, week: wk.period, homeId: m.home.teamId, awayId: m.away.teamId, playoff: !regular(m),
             me: isHome ? wk.homePts : wk.awayPts,
             opp: isHome ? wk.awayPts : wk.homePts,
             opps: isHome ? am : hm,
@@ -806,7 +753,7 @@ export const getManagerProfile = createServerFn({ method: "POST" })
     const luck = games.filter((g) => g.me < g.opp && g.me > 0).length ? best(games.filter((g) => g.me < g.opp), (g) => g.me) : null;
     if (luck) facts.push({ title: "Unluckiest loss", value: luck.me.toFixed(2), detail: `Lost anyway · ${at(luck)}` });
 
-    return { error, manager, facts, claimed: Boolean(claim), dna };
+    return { error, manager, facts, claimed: Boolean(claim), dna, story };
   });
 
 export type RankedPlayer = {

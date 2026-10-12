@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { getManagerProfile, getRosters } from "@/lib/league.functions";
 import { ManagerDNA } from "@/components/ManagerDNA";
+import { ManagerStories } from "@/components/ManagerStories";
 import { ManagerStats } from "@/components/ManagerStats";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -42,6 +43,7 @@ function ManagerPage() {
           <p className="mt-6 text-sm uppercase tracking-[0.3em] text-primary">Manager profile{data.claimed ? "" : " · unclaimed"}</p>
           <h1 className="mb-8 text-6xl text-foreground">{data.manager.name}</h1>
           {data.dna && <ManagerDNA dna={data.dna} />}
+          {data.story && <ManagerStories story={data.story} />}
           <ManagerStats m={data.manager} />
           {myRoster && (
             <>
